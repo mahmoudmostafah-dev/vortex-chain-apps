@@ -102,10 +102,7 @@ class TechnicalAnalysisService {
         trendFollowing && momentumPositive && notOverbought && aboveMa200;
 
       const mediumSignal =
-        macdCrossUp &&
-        volSurge &&
-        trendFollowing &&
-        currentRsi < rsiOverbought; // مرن أكثر (70)
+        macdCrossUp && volSurge && trendFollowing && currentRsi < rsiOverbought; // مرن أكثر (70)
 
       return {
         price,
