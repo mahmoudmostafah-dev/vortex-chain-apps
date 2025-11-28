@@ -8,7 +8,7 @@ class ExchangeService {
     this.logger = logger;
     this.binance = new ccxt.binance({
       apiKey: config.api.apiKey,
-      apiSecret: config.api.apiSecret,
+      secret: config.api.apiSecret,
       enableRateLimit: config.api.enableRateLimit,
       options: {
         defaultType: 'spot',
