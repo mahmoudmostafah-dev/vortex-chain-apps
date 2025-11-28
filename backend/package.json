@@ -12,6 +12,7 @@
   "type": "commonjs",
   "dependencies": {
     "ccxt": "^4.5.22",
+    "dotenv": "^17.2.3",
     "ta.js": "^1.16.3",
     "telegram-bot-api": "^2.0.1"
   }

@@ -1,17 +1,18 @@
 // index.js
+require('dotenv').config();
+
 const TradingBot = require('./src/bot');
 
 // إنشاء وتشغيل البوت
 const bot = new TradingBot();
-bot.start().catch((err) => console.error('فشل في تشغيل البوت:', err));
+bot.start().catch((err) => console.error('error start bot', err));
 
-// إيقاف أنيق عند الضغط على Ctrl+C
 process.on('SIGINT', () => {
-  console.log('\nإيقاف Vortex-Chain... باي باي يا سوق');
+  console.log('\nStopping Vortex-Chain... Bye bye!');
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  console.log('\nتم إنهاء البوت');
+  console.log('\nBot terminated');
   process.exit(0);
 });

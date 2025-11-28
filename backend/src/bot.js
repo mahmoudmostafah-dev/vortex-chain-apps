@@ -5,10 +5,10 @@ const TelegramBot = require('node-telegram-bot-api');
 class TradingBot {
   constructor() {
     // إعداداتك (غيّر دول بس)
-    this.API_KEY = process.env.BINANCE_API_KEY || 'ضع_API_KEY_هنا';
-    this.API_SECRET = process.env.BINANCE_SECRET_KEY || 'ضع_SECRET_KEY_هنا';
-    this.TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN || 'ضع_توكن_البوت_هنا';
-    this.TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || 'ضع_شات_ID_هنا';
+    this.API_KEY = process.env.BINANCE_API_KEY;
+    this.API_SECRET = process.env.BINANCE_SECRET_KEY;
+    this.TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+    this.TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
     this.TRADE_USD = 50;
     this.MAX_POSITIONS = 5;
@@ -100,7 +100,7 @@ RSI: ${rsi.toFixed(1)}
           }
         }
       } catch (err) {
-        console.log('خطأ مؤقت:', err.message);
+        console.log('error', err.message);
       }
 
       await new Promise((r) => setTimeout(r, 60_000)); // كل دقيقة
