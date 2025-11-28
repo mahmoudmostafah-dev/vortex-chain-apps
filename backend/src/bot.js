@@ -1,10 +1,11 @@
 // src/bot.js
+require('dotenv').config();
 const ccxt = require('ccxt');
 const TelegramBot = require('node-telegram-bot-api');
+const { sma, rsi } = require('ta.js'); // ← تم الحل نهائيًا
 
 class TradingBot {
   constructor() {
-    // إعداداتك (غيّر دول بس)
     this.API_KEY = process.env.BINANCE_API_KEY;
     this.API_SECRET = process.env.BINANCE_SECRET_KEY;
     this.TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
@@ -33,7 +34,7 @@ class TradingBot {
 
   async start() {
     await this.send(
-      'Vortex-Chain v2.0 (Class Version) شغال بقوة يا ملك\nجاهز للانطلاق'
+      'Vortex-Chain v2.0 is running strong, king!\nReady to take off'
     );
 
     while (true) {
@@ -43,7 +44,7 @@ class TradingBot {
           (s) => s.endsWith('/USDT') && !s.includes('BUSD')
         );
 
-        // فتح صفقات جديدة
+        // === فتح صفقات جديدة ===
         for (const symbol of usdtPairs) {
           if (Object.keys(this.positions).length >= this.MAX_POSITIONS) break;
           if (this.positions[symbol]) continue;
@@ -56,31 +57,50 @@ class TradingBot {
           );
           const closes = ohlcv.map((c) => c[4]);
           const price = closes[closes.length - 1];
-
           if (price < 0.1) continue;
 
-          const sma50 = (await require('ta.js').sma(closes, 50)).slice(-2);
-          const sma200 = (await require('ta.js').sma(closes, 200)).slice(-2);
-          const rsi = (await require('ta.js').rsi(closes, 14)).slice(-1)[0];
+          const sma50 = (await sma(closes, 50)).slice(-2);
+          const sma200 = (await sma(closes, 200)).slice(-2);
+          const currentRsi = (await rsi(closes, 14)).slice(-1)[0];
 
           const goldenCross = sma50[1] > sma200[1] && sma50[0] <= sma200[0];
 
-          if (goldenCross && rsi < 35) {
+          if (goldenCross && currentRsi < 35) {
             const amount = Number((this.TRADE_USD / price).toFixed(8));
-            await this.binance.createMarketBuyOrder(symbol, amount);
-            this.positions[symbol] = { entry: price, amount };
 
-            await this.send(`
-شراء ${symbol}
-السعر: ${price.toFixed(6)}
-الكمية: ${amount}
-RSI: ${rsi.toFixed(1)}
-السبب: Golden Cross
-                        `);
+            try {
+              await this.binance.createMarketBuyOrder(symbol, amount);
+              this.positions[symbol] = { entry: price, amount };
+
+              await this.send(`
+BUY ${symbol}
+Price: ${price.toFixed(6)}
+Amount: ${amount}
+RSI: ${currentRsi.toFixed(1)}
+Reason: Golden Cross
+              `);
+            } catch (buyError) {
+              const errMsg = buyError.toString();
+              if (
+                errMsg.includes('insufficient') ||
+                errMsg.includes('-1013') ||
+                errMsg.includes('balance')
+              ) {
+                await this.send(`
+NOT ENOUGH BALANCE TO BUY!
+Symbol: ${symbol}
+Price: ${price.toFixed(6)}
+Needed: ~$${this.TRADE_USD}
+Add funds → Vortex will buy it next cycle!
+                `);
+              } else {
+                console.log('Buy error:', errMsg);
+              }
+            }
           }
         }
 
-        // إغلاق الصفقات
+        // === إغلاق الصفقات ===
         for (const symbol of Object.keys(this.positions)) {
           const pos = this.positions[symbol];
           const ticker = await this.binance.fetchTicker(symbol);
@@ -88,19 +108,23 @@ RSI: ${rsi.toFixed(1)}
           const profit = ((current - pos.entry) / pos.entry) * 100;
 
           if (profit >= 6 || profit <= -2.5) {
-            await this.binance.createMarketSellOrder(symbol, pos.amount);
-            delete this.positions[symbol];
+            try {
+              await this.binance.createMarketSellOrder(symbol, pos.amount);
+              delete this.positions[symbol];
 
-            await this.send(`
-بيع ${symbol}
-السعر: ${current.toFixed(6)}
-الربح: ${profit.toFixed(2)}%
-السبب: ${profit >= 6 ? 'Take Profit 6%' : 'Stop Loss -2.5%'}
-                        `);
+              await this.send(`
+SELL ${symbol}
+Price: ${current.toFixed(6)}
+Profit: ${profit.toFixed(2)}%
+Reason: ${profit >= 6 ? 'Take Profit 6%' : 'Stop Loss -2.5%'}
+              `);
+            } catch (sellError) {
+              await this.send(`Failed to sell ${symbol}: ${sellError.message}`);
+            }
           }
         }
       } catch (err) {
-        console.log('error', err.message);
+        console.log('Main loop error:', err.message);
       }
 
       await new Promise((r) => setTimeout(r, 60_000)); // كل دقيقة
