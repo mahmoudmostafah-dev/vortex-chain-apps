@@ -1,18 +1,18 @@
 // index.js
 require('dotenv').config();
 
-const TradingBot = require('./src/bot');
+const VortexChainBot = require('./src/bot-modular');
 
-// إنشاء وتشغيل البوت
-const bot = new TradingBot();
-bot.start().catch((err) => console.error('error start bot', err));
+// تشغيل البوت المقسم لملفات منفصلة
+const bot = new VortexChainBot();
+bot.start().catch((err) => console.error('Bot startup error:', err));
 
 process.on('SIGINT', () => {
-  console.log('\nStopping Vortex-Chain... Bye bye!');
+  console.log('\n🛑 Shutting down Vortex-Chain bot...');
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  console.log('\nBot terminated');
+  console.log('\n🛑 Bot terminated');
   process.exit(0);
 });
