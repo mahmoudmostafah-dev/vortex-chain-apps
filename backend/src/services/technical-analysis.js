@@ -82,14 +82,14 @@ class TechnicalAnalysisService {
     // ✅ الجديد: شروط أكثر واقعية وتكرار
     const trendFollowing = price > sma50Val; // اتجاه صاعد بسيط - أعلى من SMA50
     const momentumPositive = macdCrossUp && volSurge; // زخم إيجابي
-    const notOverbought = currentRsi < 65; // منطقة آمنة (رفع من 55 إلى 65)
+    const notOverbought = currentRsi < rsiBuyZoneMax; // منطقة آمنة (65)
     const aboveMa200 = price > sma200Val; // فوق المتوسط الطويل الأجل
 
     const strongSignal =
       trendFollowing && momentumPositive && notOverbought && aboveMa200;
 
     const mediumSignal =
-      macdCrossUp && volSurge && trendFollowing && currentRsi < 70; // مرن أكثر
+      macdCrossUp && volSurge && trendFollowing && currentRsi < rsiOverbought; // مرن أكثر (70)
 
     return {
       price,
