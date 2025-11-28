@@ -86,16 +86,10 @@ class TechnicalAnalysisService {
     const aboveMa200 = price > sma200Val; // فوق المتوسط الطويل الأجل
 
     const strongSignal =
-      trendFollowing &&
-      momentumPositive &&
-      notOverbought &&
-      aboveMa200;
+      trendFollowing && momentumPositive && notOverbought && aboveMa200;
 
     const mediumSignal =
-      macdCrossUp &&
-      volSurge &&
-      trendFollowing &&
-      currentRsi < 70; // مرن أكثر
+      macdCrossUp && volSurge && trendFollowing && currentRsi < 70; // مرن أكثر
 
     return {
       price,
