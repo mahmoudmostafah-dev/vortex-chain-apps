@@ -16,8 +16,6 @@ services:
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
       TRADE_USD: ${TRADE_USD:-50}
       MAX_POSITIONS: ${MAX_POSITIONS:-5}
-    env_file:
-      - ./app-backend/.env
     ports:
       - "3000:3000"
     volumes:
