@@ -508,6 +508,7 @@ ${symbol}
           takeProfit,
           atrStop: null,
           atr: pending.signal.currentAtr || null,
+          ocoOrderId: null, // سيتم إضافته بعد إنشاء OCO
         };
 
         await this.database.savePosition(symbol, this.positions[symbol]);
@@ -519,14 +520,38 @@ ${symbol}
           reason: `Limit Order Executed`,
         });
 
+        // ✅ إنشاء OCO Order (Stop Loss + Take Profit) على Binance
+        try {
+          const ocoOrder = await this.exchange.createOCOOrder(
+            symbol,
+            filledAmount,
+            avgPrice,
+            stopLoss,
+            takeProfit
+          );
+
+          this.positions[symbol].ocoOrderId = ocoOrder.orderListId;
+          await this.database.savePosition(symbol, this.positions[symbol]);
+
+          this.logger.success(
+            `🛡️ OCO Order created for ${symbol} | SL: ${stopLoss} | TP: ${takeProfit}`
+          );
+        } catch (ocoErr) {
+          this.logger.error(
+            `⚠️ OCO Order failed for ${symbol}: ${ocoErr.message} - Will use manual monitoring`
+          );
+        }
+
         const feeBuy = avgPrice * filledAmount * 0.001;
         const msg = `✅ BUY EXECUTED ${symbol}
 💰 Entry: ${Helpers.formatPrice(avgPrice)}
 📊 Amount: ${filledAmount}
 💵 Total: ${Helpers.formatMoney(avgPrice * filledAmount)}
-📉 Stop Loss: ${Helpers.formatPrice(stopLoss)}
-📈 Take Profit: ${Helpers.formatPrice(takeProfit)}
-💸 Fee: ${feeBuy.toFixed(4)}`;
+📉 Stop Loss: ${Helpers.formatPrice(stopLoss)} 🛡️
+📈 Take Profit: ${Helpers.formatPrice(takeProfit)} 🛡️
+💸 Fee: ${feeBuy.toFixed(4)}
+
+🛡️ OCO Order active on Binance`;
 
         await this.telegram.send(msg);
         delete this.pendingOrders[symbol];
@@ -664,6 +689,78 @@ ${symbol}
         const pos = this.positions[symbol];
 
         try {
+          // ✅ التحقق من OCO Order أولاً (إذا كان موجود)
+          if (!this.paperTrading && pos.ocoOrderId) {
+            try {
+              const openOrders = await this.exchange.fetchOpenOrders(symbol);
+              const ocoExists = openOrders.some(
+                (o) => o.info?.orderListId == pos.ocoOrderId
+              );
+
+              // إذا الـ OCO Order اختفى، يعني اتنفذ (Stop Loss أو Take Profit)
+              if (!ocoExists) {
+                this.logger.info(
+                  `🛡️ OCO Order executed for ${symbol} - Updating database`
+                );
+
+                const ticker = await this.exchange.fetchTicker(symbol);
+                const currentPrice = ticker.last;
+                const profit = Helpers.calculateProfitPercent(
+                  pos.entry,
+                  currentPrice
+                );
+
+                const reason =
+                  currentPrice >= pos.takeProfit
+                    ? `OCO Take Profit +${this.config.risk.takeProfitPercent}%`
+                    : `OCO Stop Loss -${this.config.risk.stopLossPercent}%`;
+
+                const profitUsdt = Helpers.calculateProfitUsdt(
+                  pos.entry,
+                  currentPrice,
+                  pos.amount
+                );
+                const feeSell = currentPrice * pos.amount * 0.001;
+
+                await this.database.saveTrade({
+                  symbol,
+                  side: 'SELL',
+                  entryPrice: pos.entry,
+                  exitPrice: currentPrice,
+                  amount: pos.amount,
+                  profitPercent: profit,
+                  profitUsdt: profitUsdt - feeSell,
+                  fees: feeSell,
+                  reason,
+                });
+
+                delete this.positions[symbol];
+                await this.database.deletePosition(symbol);
+
+                const emoji = profit > 0 ? '🟢' : '🔴';
+                const msg = `${emoji} 🛡️ ${reason}
+${symbol}
+💰 Entry: ${Helpers.formatPrice(pos.entry)}
+💵 Exit: ${Helpers.formatPrice(currentPrice)}
+📊 Profit: ${Helpers.formatPercent(profit)}
+💸 Fee: ${feeSell.toFixed(4)}`;
+
+                await this.telegram.send(msg);
+                this.logger.trade(
+                  `🛡️ OCO ${symbol} | ${reason} | P/L: ${profit.toFixed(2)}%`
+                );
+
+                await this.updateBalance();
+                continue;
+              }
+            } catch (ocoCheckErr) {
+              this.logger.warning(
+                `OCO check error ${symbol}: ${ocoCheckErr.message}`
+              );
+            }
+          }
+
+          // المراقبة العادية للسعر
           const ticker = await this.exchange.fetchTicker(symbol);
           const current = ticker.last;
 
@@ -674,28 +771,31 @@ ${symbol}
 
           const profit = Helpers.calculateProfitPercent(pos.entry, current);
 
-          if (current >= pos.takeProfit) {
-            await this.closePosition(
-              symbol,
-              `Take Profit +${this.config.risk.takeProfitPercent}%`
-            );
-          } else if (current <= pos.stopLoss) {
-            await this.closePosition(
-              symbol,
-              `Hard Stop -${this.config.risk.stopLossPercent}%`
-            );
-          } else if (
-            current <=
-              Helpers.calculateTrailingStop(
-                pos.highest,
-                this.config.risk.trailingStopPercent
-              ) &&
-            profit > this.config.risk.minSellProfit
-          ) {
-            await this.closePosition(
-              symbol,
-              `Trailing Stop ${this.config.risk.trailingStopPercent}% from peak`
-            );
+          // للـ Paper Trading أو إذا فشل OCO Order
+          if (this.paperTrading || !pos.ocoOrderId) {
+            if (current >= pos.takeProfit) {
+              await this.closePosition(
+                symbol,
+                `Take Profit +${this.config.risk.takeProfitPercent}%`
+              );
+            } else if (current <= pos.stopLoss) {
+              await this.closePosition(
+                symbol,
+                `Hard Stop -${this.config.risk.stopLossPercent}%`
+              );
+            } else if (
+              current <=
+                Helpers.calculateTrailingStop(
+                  pos.highest,
+                  this.config.risk.trailingStopPercent
+                ) &&
+              profit > this.config.risk.minSellProfit
+            ) {
+              await this.closePosition(
+                symbol,
+                `Trailing Stop ${this.config.risk.trailingStopPercent}% from peak`
+              );
+            }
           }
 
           await Helpers.delay(this.config.trading.priceCheckInterval);

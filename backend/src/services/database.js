@@ -43,6 +43,7 @@ class DatabaseService {
         stop_loss REAL NOT NULL,
         take_profit REAL NOT NULL,
         atr_stop REAL,
+        oco_order_id TEXT,
         timestamp INTEGER NOT NULL
       );
 
@@ -87,8 +88,8 @@ class DatabaseService {
   async savePosition(symbol, position) {
     await this.withDbLock(() =>
       this.db.run(
-        `INSERT OR REPLACE INTO positions (symbol, entry_price, amount, highest_price, stop_loss, take_profit, atr_stop, timestamp)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT OR REPLACE INTO positions (symbol, entry_price, amount, highest_price, stop_loss, take_profit, atr_stop, oco_order_id, timestamp)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           symbol,
           position.entry,
@@ -97,6 +98,7 @@ class DatabaseService {
           position.stopLoss,
           position.takeProfit,
           position.atrStop || null,
+          position.ocoOrderId || null,
           Date.now(),
         ]
       )
@@ -120,6 +122,7 @@ class DatabaseService {
         stopLoss: row.stop_loss,
         takeProfit: row.take_profit,
         atrStop: row.atr_stop,
+        ocoOrderId: row.oco_order_id,
       };
     }
     return positions;

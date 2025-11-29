@@ -121,6 +121,37 @@ class ExchangeService {
       `createOrder ${symbol}`
     );
   }
+
+  // ✅ OCO Order (One-Cancels-the-Other) - Stop Loss + Take Profit معاً
+  async createOCOOrder(symbol, amount, price, stopLoss, takeProfit) {
+    return await this.retryWithBackoff(
+      () =>
+        this.binance.privatePostOrderOco({
+          symbol: symbol.replace('/', ''),
+          side: 'SELL',
+          quantity: amount,
+          price: takeProfit,
+          stopPrice: stopLoss,
+          stopLimitPrice: stopLoss * 0.995, // 0.5% below stop for execution
+          stopLimitTimeInForce: 'GTC',
+        }),
+      `createOCOOrder ${symbol}`
+    );
+  }
+
+  async fetchOpenOrders(symbol) {
+    return await this.retryWithBackoff(
+      () => this.binance.fetchOpenOrders(symbol),
+      `fetchOpenOrders ${symbol}`
+    );
+  }
+
+  async cancelOrder(orderId, symbol) {
+    return await this.retryWithBackoff(
+      () => this.binance.cancelOrder(orderId, symbol),
+      `cancelOrder ${symbol}`
+    );
+  }
 }
 
 module.exports = ExchangeService;
