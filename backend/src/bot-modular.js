@@ -33,6 +33,7 @@ class VortexChainBot {
     this.isConnected = false;
     this.paperTrading = this.config.trading.paperTrading; // ✅ وضع التداول الوهمي
     this.paperOrderId = 1000; // ✅ معرف الأوامر الوهمية
+    this.blockedSymbols = {}; // ✅ عملات محظورة مؤقتاً (Smart Re-entry)
   }
 
   async init() {
@@ -196,6 +197,25 @@ ${
     for (const symbol of topCoins) {
       try {
         if (this.positions[symbol] || this.pendingOrders[symbol]) continue;
+
+        // ✅ Smart Re-entry: تخطي العملات المحظورة
+        if (this.config.advanced.smartReentry.enabled) {
+          if (this.blockedSymbols[symbol]) {
+            if (Date.now() < this.blockedSymbols[symbol]) {
+              const remainingMin = Math.ceil(
+                (this.blockedSymbols[symbol] - Date.now()) / 60000
+              );
+              this.logger.info(
+                `🚫 ${symbol} blocked for ${remainingMin} more minutes (Smart Re-entry)`
+              );
+              continue;
+            } else {
+              // انتهت مدة الحظر
+              delete this.blockedSymbols[symbol];
+              this.logger.success(`✅ ${symbol} unblocked - can trade again`);
+            }
+          }
+        }
 
         const ticker = await this.exchange.fetchTicker(symbol);
         const volume24h = ticker.quoteVolume || 0;
@@ -632,6 +652,19 @@ ${symbol}
             pos.entry
           } | Exit: ${currentPrice} | P/L: ${profit.toFixed(2)}%`
         );
+
+        // ✅ Smart Re-entry: حظر العملة مؤقتاً بعد الخسارة
+        if (this.config.advanced.smartReentry.enabled && profit < 0) {
+          const blockDuration = reason.includes('Stop Loss')
+            ? this.config.advanced.smartReentry.blockDurationAfterStopLoss
+            : this.config.advanced.smartReentry.blockDurationAfterLoss;
+
+          this.blockedSymbols[symbol] = Date.now() + blockDuration * 60 * 1000;
+          this.logger.warning(
+            `🚫 ${symbol} blocked for ${blockDuration} minutes after loss`
+          );
+        }
+
         return;
       }
 
@@ -675,6 +708,18 @@ ${symbol}
           pos.entry
         } | Exit: ${currentPrice} | P/L: ${profit.toFixed(2)}%`
       );
+
+      // ✅ Smart Re-entry: حظر العملة مؤقتاً بعد الخسارة
+      if (this.config.advanced.smartReentry.enabled && profit < 0) {
+        const blockDuration = reason.includes('Stop Loss')
+          ? this.config.advanced.smartReentry.blockDurationAfterStopLoss
+          : this.config.advanced.smartReentry.blockDurationAfterLoss;
+
+        this.blockedSymbols[symbol] = Date.now() + blockDuration * 60 * 1000;
+        this.logger.warning(
+          `🚫 ${symbol} blocked for ${blockDuration} minutes after loss`
+        );
+      }
 
       await this.updateBalance();
     } catch (err) {
@@ -773,8 +818,67 @@ ${symbol}
 
           const profit = Helpers.calculateProfitPercent(pos.entry, current);
 
+          // ✅ Dynamic Stop Loss - نقل SL للـ breakeven أو قفل ربح
+          if (this.config.advanced.dynamicStopLoss.enabled) {
+            const moveToBreakeven =
+              this.config.advanced.dynamicStopLoss.moveToBreakevenAt;
+            const lockProfitAt =
+              this.config.advanced.dynamicStopLoss.lockProfitAt;
+            const lockProfitPercent =
+              this.config.advanced.dynamicStopLoss.lockProfitPercent;
+
+            // نقل SL للـ breakeven عند +3%
+            if (profit >= moveToBreakeven && pos.stopLoss < pos.entry) {
+              pos.stopLoss = pos.entry;
+              await this.database.savePosition(symbol, pos);
+              this.logger.success(
+                `✅ ${symbol}: Stop Loss moved to breakeven @ ${pos.entry.toFixed(
+                  4
+                )}`
+              );
+            }
+
+            // قفل ربح +2% عند وصول +5%
+            if (
+              profit >= lockProfitAt &&
+              pos.stopLoss < pos.entry * (1 + lockProfitPercent / 100)
+            ) {
+              pos.stopLoss = pos.entry * (1 + lockProfitPercent / 100);
+              await this.database.savePosition(symbol, pos);
+              this.logger.success(
+                `✅ ${symbol}: Stop Loss locked profit at +${lockProfitPercent}% @ ${pos.stopLoss.toFixed(
+                  4
+                )}`
+              );
+            }
+          }
+
           // للـ Paper Trading أو إذا فشل OCO Order
           if (this.paperTrading || !pos.ocoOrderId) {
+            // ✅ Trailing Take Profit
+            if (this.config.advanced.trailingTakeProfit.enabled) {
+              const activationPercent =
+                this.config.advanced.trailingTakeProfit.activationPercent;
+              const trailingPercent =
+                this.config.advanced.trailingTakeProfit.trailingPercent;
+
+              // إذا وصلنا +5%، نبدأ trailing
+              if (profit >= activationPercent) {
+                const trailingStop = pos.highest * (1 - trailingPercent / 100);
+
+                if (current <= trailingStop) {
+                  await this.closePosition(
+                    symbol,
+                    `Trailing Take Profit (${profit.toFixed(
+                      2
+                    )}% from +${activationPercent}%)`
+                  );
+                  continue;
+                }
+              }
+            }
+
+            // الشروط العادية
             if (current >= pos.takeProfit) {
               await this.closePosition(
                 symbol,
@@ -783,7 +887,7 @@ ${symbol}
             } else if (current <= pos.stopLoss) {
               await this.closePosition(
                 symbol,
-                `Hard Stop -${this.config.risk.stopLossPercent}%`
+                `Stop Loss -${profit.toFixed(2)}%`
               );
             } else if (
               current <=

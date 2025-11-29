@@ -107,4 +107,29 @@ module.exports = {
     protectionDurationMax: 4, // 4 ساعات كحد أقصى
     checkInterval: 60000, // فحص كل دقيقة
   },
+
+  // Advanced Features (ميزات متقدمة)
+  advanced: {
+    // Trailing Take Profit
+    trailingTakeProfit: {
+      enabled: true,
+      activationPercent: 5, // يبدأ trailing عند +5%
+      trailingPercent: 1.5, // يبيع عند انخفاض 1.5% من القمة
+    },
+
+    // Dynamic Stop Loss
+    dynamicStopLoss: {
+      enabled: true,
+      moveToBreakevenAt: 3, // ينقل SL للـ breakeven عند +3%
+      lockProfitAt: 5, // يقفل ربح +2% عند وصول +5%
+      lockProfitPercent: 2,
+    },
+
+    // Smart Re-entry
+    smartReentry: {
+      enabled: true,
+      blockDurationAfterStopLoss: 120, // دقيقتين بعد Stop Loss
+      blockDurationAfterLoss: 60, // دقيقة بعد أي خسارة
+    },
+  },
 };
