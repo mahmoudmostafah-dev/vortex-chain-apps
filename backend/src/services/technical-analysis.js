@@ -27,6 +27,9 @@ class TechnicalAnalysisService {
   async analyzeSignal(ohlcv) {
     try {
       if (!ohlcv || ohlcv.length < 200) {
+        console.log(
+          `[TA] Not enough data: ${ohlcv ? ohlcv.length : 0} candles`
+        );
         return null;
       }
 
@@ -35,6 +38,7 @@ class TechnicalAnalysisService {
       const price = closes[closes.length - 1];
 
       if (!price || price <= 0 || closes.length === 0) {
+        console.log(`[TA] Invalid price: ${price}`);
         return null;
       }
 
@@ -110,7 +114,7 @@ class TechnicalAnalysisService {
         currentRsi > 30 &&
         currentRsi < 75;
 
-      return {
+      const result = {
         price,
         currentRsi,
         currentAtr,
@@ -127,8 +131,14 @@ class TechnicalAnalysisService {
         strength: strongSignal ? 'STRONG' : mediumSignal ? 'MEDIUM' : 'WEAK',
         isSignal: strongSignal || mediumSignal,
       };
+
+      console.log(
+        `[TA] Analysis complete - Signal: ${result.isSignal}, Strength: ${result.strength}`
+      );
+      return result;
     } catch (err) {
-      console.error('analyzeSignal error:', err.message);
+      console.error('[TA] analyzeSignal error:', err.message);
+      console.error('[TA] Stack:', err.stack);
       return null;
     }
   }
