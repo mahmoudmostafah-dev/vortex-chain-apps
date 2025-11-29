@@ -34,7 +34,7 @@ module.exports = {
     scanInterval: 60000, // 1 minute
     balanceUpdateInterval: 300000, // 5 minutes
     ohlcvTimeframe: '15m',
-    ohlcvLimit: 200,
+    ohlcvLimit: 500, // ✅ زيادة من 200 إلى 500 للتأكد من الحصول على بيانات كافية
     priceCheckInterval: 100, // ms between price checks
     paperTrading: process.env.PAPER_TRADING === 'true', // ✅ وضع التداول الوهمي
     paperBalance: Number(process.env.PAPER_BALANCE) || 1000, // ✅ رصيد وهمي

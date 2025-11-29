@@ -26,9 +26,12 @@ class TechnicalAnalysisService {
 
   async analyzeSignal(ohlcv) {
     try {
-      if (!ohlcv || ohlcv.length < 200) {
+      // ✅ خفض من 200 إلى 100 شمعة (كافي لحساب المؤشرات)
+      if (!ohlcv || ohlcv.length < 100) {
         console.log(
-          `[TA] Not enough data: ${ohlcv ? ohlcv.length : 0} candles`
+          `[TA] Not enough data: ${
+            ohlcv ? ohlcv.length : 0
+          } candles (need 100+)`
         );
         return null;
       }
