@@ -1,0 +1,159 @@
+<div class="dashboard">
+  <header class="dashboard-header">
+    <h1>🚀 Vortex-Chain Trading Dashboard</h1>
+    <div class="period-selector">
+      <button [class.active]="selectedPeriod() === 'day'" (click)="changePeriod('day')">Day</button>
+      <button [class.active]="selectedPeriod() === 'week'" (click)="changePeriod('week')">
+        Week
+      </button>
+      <button [class.active]="selectedPeriod() === 'month'" (click)="changePeriod('month')">
+        Month
+      </button>
+      <button [class.active]="selectedPeriod() === 'year'" (click)="changePeriod('year')">
+        Year
+      </button>
+    </div>
+  </header>
+
+  @if (apiService.loading()) {
+  <div class="loading">Loading...</div>
+  } @if (apiService.error()) {
+  <div class="error">{{ apiService.error() }}</div>
+  }
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Trades</div>
+      <div class="stat-value">{{ stats().totalTrades }}</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Win Rate</div>
+      <div class="stat-value" [class.positive]="stats().winRate > 50">
+        {{ stats().winRate.toFixed(1) }}%
+      </div>
+      <div class="stat-detail">{{ stats().wins }}W / {{ stats().losses }}L</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Total P/L</div>
+      <div
+        class="stat-value"
+        [class.positive]="stats().totalProfit > 0"
+        [class.negative]="stats().totalProfit < 0"
+      >
+        {{ formatMoney(stats().totalProfit) }}
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Avg Profit</div>
+      <div
+        class="stat-value"
+        [class.positive]="stats().avgProfit > 0"
+        [class.negative]="stats().avgProfit < 0"
+      >
+        {{ formatMoney(stats().avgProfit) }}
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Total Fees</div>
+      <div class="stat-value negative">{{ formatMoney(stats().totalFees) }}</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Open Positions</div>
+      <div class="stat-value">{{ stats().openPositions }}</div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <section class="positions-section">
+      <h2>📊 Open Positions</h2>
+      @if (apiService.positions().length === 0) {
+      <p class="empty-state">No open positions</p>
+      } @else {
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Entry</th>
+              <th>Amount</th>
+              <th>Stop Loss</th>
+              <th>Take Profit</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (position of apiService.positions(); track position.symbol) {
+            <tr>
+              <td class="symbol">{{ position.symbol }}</td>
+              <td>{{ formatMoney(position.entry_price) }}</td>
+              <td>{{ position.amount.toFixed(6) }}</td>
+              <td class="negative">{{ formatMoney(position.stop_loss) }}</td>
+              <td class="positive">{{ formatMoney(position.take_profit) }}</td>
+              <td>{{ formatDate(position.timestamp) }}</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+    </section>
+
+    <section class="trades-section">
+      <h2>💰 Recent Trades</h2>
+      @if (apiService.trades().length === 0) {
+      <p class="empty-state">No trades in this period</p>
+      } @else {
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Side</th>
+              <th>Entry</th>
+              <th>Exit</th>
+              <th>P/L %</th>
+              <th>P/L $</th>
+              <th>Reason</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (trade of apiService.trades(); track trade.id) {
+            <tr>
+              <td class="symbol">{{ trade.symbol }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [class.buy]="trade.side === 'BUY'"
+                  [class.sell]="trade.side === 'SELL'"
+                >
+                  {{ trade.side }}
+                </span>
+              </td>
+              <td>{{ trade.entry_price ? formatMoney(trade.entry_price) : '-' }}</td>
+              <td>{{ trade.exit_price ? formatMoney(trade.exit_price) : '-' }}</td>
+              <td
+                [class.positive]="trade.profit_percent > 0"
+                [class.negative]="trade.profit_percent < 0"
+              >
+                {{ trade.profit_percent ? formatPercent(trade.profit_percent) : '-' }}
+              </td>
+              <td [class.positive]="trade.profit_usdt > 0" [class.negative]="trade.profit_usdt < 0">
+                {{ trade.profit_usdt ? formatMoney(trade.profit_usdt) : '-' }}
+              </td>
+              <td class="reason">{{ trade.reason || '-' }}</td>
+              <td>{{ formatDate(trade.timestamp) }}</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+    </section>
+  </div>
+</div>

@@ -1,0 +1,67 @@
+<div class="logs">
+  <header class="logs-header">
+    <h1>📝 Bot Logs</h1>
+    <div class="header-controls">
+      <input
+        type="date"
+        [value]="selectedDate()"
+        (change)="onDateChange($event)"
+        class="date-picker"
+      />
+      <button class="download-btn" (click)="downloadLogs()">📥 Download</button>
+    </div>
+  </header>
+
+  @if (loading()) {
+  <div class="loading">Loading logs...</div>
+  } @if (error()) {
+  <div class="error">{{ error() }}</div>
+  }
+
+  <div class="controls-bar">
+    <div class="filter-buttons">
+      @for (level of logLevels; track level) {
+      <button
+        [class.active]="filterLevel() === level"
+        (click)="onFilterChange(level)"
+        class="filter-btn"
+      >
+        {{ level }}
+      </button>
+      }
+    </div>
+
+    <div class="search-box">
+      <input
+        type="text"
+        placeholder="Search logs..."
+        [value]="searchTerm()"
+        (input)="onSearchChange($event)"
+        class="search-input"
+      />
+      @if (searchTerm()) {
+      <button class="clear-btn" (click)="clearSearch()">✕</button>
+      }
+    </div>
+  </div>
+
+  <div class="logs-container">
+    @if (getFilteredLogs().length === 0) {
+    <p class="empty-state">No logs found</p>
+    } @else {
+    <div class="log-lines">
+      @for (line of getFilteredLogs(); track $index) {
+      <div class="log-line" [class]="getLogClass(line)">
+        <span class="line-number">{{ $index + 1 }}</span>
+        <span class="line-content">{{ line }}</span>
+      </div>
+      }
+    </div>
+    }
+  </div>
+
+  <div class="logs-footer">
+    <span>Total lines: {{ getFilteredLogs().length }}</span>
+    <span>Date: {{ selectedDate() }}</span>
+  </div>
+</div>

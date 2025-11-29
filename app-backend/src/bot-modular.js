@@ -9,6 +9,7 @@ const ExchangeService = require('./services/exchange');
 const WebSocketService = require('./services/websocket');
 const TechnicalAnalysisService = require('./services/technical-analysis');
 const MarketMonitorService = require('./services/market-monitor');
+const ApiServer = require('./services/api-server');
 const Helpers = require('./utils/helpers');
 const Diagnostics = require('./utils/diagnostics');
 
@@ -22,6 +23,7 @@ class VortexChainBot {
     this.ws = new WebSocketService(this.config, this.logger);
     this.technicalAnalysis = new TechnicalAnalysisService(this.config);
     this.marketMonitor = new MarketMonitorService(this.config, this.logger);
+    this.apiServer = new ApiServer(this.config, this.database, this.logger);
 
     this.positions = {};
     this.pendingOrders = {};
@@ -41,6 +43,9 @@ class VortexChainBot {
 
     await this.database.init();
     this.positions = await this.database.getAllPositions();
+
+    // Start API server for dashboard
+    this.apiServer.init();
 
     this.ws.init();
     await this.updateBalance();

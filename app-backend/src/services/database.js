@@ -152,3 +152,40 @@ class DatabaseService {
 }
 
 module.exports = DatabaseService;
+
+  async getAllPositions() {
+    const rows = await this.db.all('SELECT * FROM positions');
+    const positions = {};
+    
+    for (const row of rows) {
+      positions[row.symbol] = {
+        entry: row.entry_price,
+        amount: row.amount,
+        highest: row.highest_price,
+        stopLoss: row.stop_loss,
+        takeProfit: row.take_profit,
+        atrStop: row.atr_stop,
+        ocoOrderId: row.oco_order_id,
+      };
+    }
+    
+    return positions;
+  }
+
+  async getDailyStats(startTimestamp, endTimestamp) {
+    return await this.db.get(
+      `SELECT 
+        COUNT(*) as total_trades,
+        SUM(CASE WHEN profit_percent > 0 THEN 1 ELSE 0 END) as wins,
+        SUM(CASE WHEN profit_percent <= 0 THEN 1 ELSE 0 END) as losses,
+        SUM(profit_usdt) as total_profit,
+        AVG(profit_percent) as avg_profit,
+        SUM(fees) as total_fees
+      FROM trades 
+      WHERE timestamp >= ? AND timestamp < ? AND side = 'SELL'`,
+      [startTimestamp, endTimestamp]
+    );
+  }
+}
+
+module.exports = DatabaseService;

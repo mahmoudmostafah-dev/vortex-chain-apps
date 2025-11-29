@@ -1,0 +1,170 @@
+<div class="reports">
+  <header class="reports-header">
+    <h1>📈 Performance Reports</h1>
+    <div class="period-selector">
+      <button [class.active]="selectedPeriod() === 'week'" (click)="changePeriod('week')">
+        Week
+      </button>
+      <button [class.active]="selectedPeriod() === 'month'" (click)="changePeriod('month')">
+        Month
+      </button>
+      <button [class.active]="selectedPeriod() === 'year'" (click)="changePeriod('year')">
+        Year
+      </button>
+    </div>
+  </header>
+
+  @if (apiService.loading()) {
+  <div class="loading">Loading reports...</div>
+  } @if (apiService.error()) {
+  <div class="error">{{ apiService.error() }}</div>
+  }
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="card-icon">📊</div>
+      <div class="card-content">
+        <div class="card-label">Total Trades</div>
+        <div class="card-value">{{ summary().totalTrades }}</div>
+        <div class="card-detail">{{ summary().totalWins }}W / {{ summary().totalLosses }}L</div>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-icon">🎯</div>
+      <div class="card-content">
+        <div class="card-label">Avg Win Rate</div>
+        <div class="card-value" [class.positive]="summary().avgWinRate > 50">
+          {{ formatPercent(summary().avgWinRate) }}
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-icon">💰</div>
+      <div class="card-content">
+        <div class="card-label">Total Profit</div>
+        <div
+          class="card-value"
+          [class.positive]="summary().totalProfit > 0"
+          [class.negative]="summary().totalProfit < 0"
+        >
+          {{ formatMoney(summary().totalProfit) }}
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-icon">💸</div>
+      <div class="card-content">
+        <div class="card-label">Total Fees</div>
+        <div class="card-value negative">{{ formatMoney(summary().totalFees) }}</div>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-icon">✅</div>
+      <div class="card-content">
+        <div class="card-label">Net Profit</div>
+        <div
+          class="card-value"
+          [class.positive]="summary().netProfit > 0"
+          [class.negative]="summary().netProfit < 0"
+        >
+          {{ formatMoney(summary().netProfit) }}
+        </div>
+      </div>
+    </div>
+
+    @if (summary().bestDay) {
+    <div class="summary-card highlight-green">
+      <div class="card-icon">🏆</div>
+      <div class="card-content">
+        <div class="card-label">Best Day</div>
+        <div class="card-value positive">{{ formatMoney(summary().bestDay!.total_profit) }}</div>
+        <div class="card-detail">{{ formatDate(summary().bestDay!.date) }}</div>
+      </div>
+    </div>
+    } @if (summary().worstDay) {
+    <div class="summary-card highlight-red">
+      <div class="card-icon">⚠️</div>
+      <div class="card-content">
+        <div class="card-label">Worst Day</div>
+        <div class="card-value negative">{{ formatMoney(summary().worstDay!.total_profit) }}</div>
+        <div class="card-detail">{{ formatDate(summary().worstDay!.date) }}</div>
+      </div>
+    </div>
+    }
+  </div>
+
+  <section class="daily-breakdown">
+    <h2>📅 Daily Breakdown</h2>
+    @if (apiService.dailyStats().length === 0) {
+    <p class="empty-state">No data available for this period</p>
+    } @else {
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Trades</th>
+            <th>Wins</th>
+            <th>Losses</th>
+            <th>Win Rate</th>
+            <th>Total P/L</th>
+            <th>Avg P/L</th>
+            <th>Fees</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (stat of apiService.dailyStats(); track stat.date) {
+          <tr>
+            <td class="date">{{ formatDate(stat.date) }}</td>
+            <td>{{ stat.total_trades }}</td>
+            <td class="positive">{{ stat.wins }}</td>
+            <td class="negative">{{ stat.losses }}</td>
+            <td [class.positive]="stat.win_rate > 50" [class.negative]="stat.win_rate < 50">
+              {{ formatPercent(stat.win_rate) }}
+            </td>
+            <td [class.positive]="stat.total_profit > 0" [class.negative]="stat.total_profit < 0">
+              {{ formatMoney(stat.total_profit) }}
+            </td>
+            <td [class.positive]="stat.avg_profit > 0" [class.negative]="stat.avg_profit < 0">
+              {{ formatMoney(stat.avg_profit) }}
+            </td>
+            <td class="negative">{{ formatMoney(stat.total_fees) }}</td>
+          </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td><strong>Total</strong></td>
+            <td>
+              <strong>{{ summary().totalTrades }}</strong>
+            </td>
+            <td class="positive">
+              <strong>{{ summary().totalWins }}</strong>
+            </td>
+            <td class="negative">
+              <strong>{{ summary().totalLosses }}</strong>
+            </td>
+            <td [class.positive]="summary().avgWinRate > 50">
+              <strong>{{ formatPercent(summary().avgWinRate) }}</strong>
+            </td>
+            <td
+              [class.positive]="summary().totalProfit > 0"
+              [class.negative]="summary().totalProfit < 0"
+            >
+              <strong>{{ formatMoney(summary().totalProfit) }}</strong>
+            </td>
+            <td>-</td>
+            <td class="negative">
+              <strong>{{ formatMoney(summary().totalFees) }}</strong>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    }
+  </section>
+</div>
