@@ -12,9 +12,8 @@ class TelegramService {
 
   async send(message) {
     try {
-      await this.bot.sendMessage(this.chatId, message + '\n\n#VortexChain', {
-        parse_mode: 'HTML',
-      });
+      // ✅ إرسال بدون parse_mode لتجنب مشاكل التنسيق
+      await this.bot.sendMessage(this.chatId, message + '\n\n#VortexChain');
     } catch (err) {
       console.error('Telegram error:', err.message);
       // ✅ لوج تفصيلي للتشخيص
