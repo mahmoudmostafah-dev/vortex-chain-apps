@@ -104,6 +104,39 @@ docker-compose up -d --build
 docker-compose logs -f backend
 ```
 
+## 🛡️ OCO Orders - حماية الصفقات (NEW in v5.1)
+
+**نظام OCO Orders** يحمي صفقاتك حتى لو توقف البوت!
+
+### ما هو OCO Order؟
+
+عند فتح أي صفقة، يتم وضع أوامر Stop Loss و Take Profit **مباشرة على Binance**:
+
+✅ حماية 24/7 حتى لو البوت متوقف
+✅ تنفيذ فوري من Binance
+✅ أمان أعلى للصفقات
+
+### نشر التحديث
+
+```bash
+# 1. إيقاف البوت
+docker-compose down
+
+# 2. إعادة بناء
+docker-compose build --no-cache backend
+
+# 3. تشغيل migration
+docker-compose run --rm backend node migrate-add-oco.js
+
+# 4. تشغيل البوت
+docker-compose up -d
+
+# 5. (اختياري) إضافة OCO للمراكز الموجودة
+docker-compose exec backend node add-oco-to-existing.js
+```
+
+📖 **للمزيد**: راجع `docs/OCO_ORDERS.md` و `docs/OCO_DEPLOYMENT.md`
+
 ## 📋 المتطلبات (Requirements)
 
 - Node.js 22+
@@ -205,6 +238,7 @@ logs/
 - stop_loss: سعر التوقف
 - take_profit: سعر الربح
 - atr_stop: توقف ATR
+- oco_order_id: معرف أمر OCO على Binance (NEW)
 - timestamp: التاريخ والوقت
 ```
 

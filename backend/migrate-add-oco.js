@@ -11,6 +11,19 @@ async function migrate() {
   });
 
   try {
+    // Check if positions table exists
+    const tables = await db.all(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='positions'"
+    );
+
+    if (tables.length === 0) {
+      console.log('⚠️  positions table does not exist yet.');
+      console.log('✅ It will be created automatically when the bot starts.\n');
+      console.log('💡 The new schema already includes oco_order_id column.\n');
+      await db.close();
+      return;
+    }
+
     // Check if column already exists
     const tableInfo = await db.all('PRAGMA table_info(positions)');
     const hasOcoColumn = tableInfo.some((col) => col.name === 'oco_order_id');
