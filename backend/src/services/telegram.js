@@ -16,20 +16,26 @@ class TelegramService {
 
   async send(message) {
     try {
-      console.log(`[Telegram] Attempting to send to chatId: ${this.chatId}`);
+      const url = `${this.apiUrl}/sendMessage`;
+      const payload = {
+        chat_id: this.chatId,
+        text: message + '\n\n#VortexChain',
+      };
 
-      const response = await fetch(`${this.apiUrl}/sendMessage`, {
+      console.log(`[Telegram] URL: ${url}`);
+      console.log(`[Telegram] Token length: ${this.token.length}`);
+      console.log(`[Telegram] Payload:`, JSON.stringify(payload));
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          chat_id: this.chatId,
-          text: message + '\n\n#VortexChain',
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
+      console.log(`[Telegram] Response:`, JSON.stringify(data));
 
       if (!data.ok) {
         throw new Error(`Telegram API error: ${data.description}`);
