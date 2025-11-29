@@ -20,7 +20,13 @@ async function migrate() {
       console.log('⚠️  positions table does not exist yet.');
       console.log('✅ It will be created automatically when the bot starts.\n');
       console.log('💡 The new schema already includes oco_order_id column.\n');
-      await db.close();
+      if (db) {
+        try {
+          await db.close();
+        } catch (e) {
+          // Ignore close error
+        }
+      }
       return;
     }
 
@@ -32,7 +38,13 @@ async function migrate() {
       console.log(
         '✅ Column oco_order_id already exists. No migration needed.\n'
       );
-      await db.close();
+      if (db) {
+        try {
+          await db.close();
+        } catch (e) {
+          // Ignore close error
+        }
+      }
       return;
     }
 
@@ -54,7 +66,13 @@ async function migrate() {
     console.error('❌ Migration failed:', err.message);
     throw err;
   } finally {
-    await db.close();
+    if (db) {
+      try {
+        await db.close();
+      } catch (e) {
+        // Ignore close error
+      }
+    }
   }
 }
 
