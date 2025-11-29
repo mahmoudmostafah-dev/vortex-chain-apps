@@ -25,6 +25,10 @@ export class MarketScanner implements OnInit, OnDestroy {
   protected lastUpdate = signal<Date | null>(null);
   protected autoRefresh = signal(true);
 
+  // Computed signals for stats
+  protected gainersCount = computed(() => this.coins().filter((c) => c.change24h > 0).length);
+  protected losersCount = computed(() => this.coins().filter((c) => c.change24h < 0).length);
+
   private refreshSubscription?: Subscription;
   private readonly API_URL = 'http://localhost:3000/api';
 

@@ -39,15 +39,11 @@
     </div>
     <div class="stat">
       <span class="stat-label">Gainers:</span>
-      <span class="stat-value positive">
-        {{ coins().filter((c) => c.change24h > 0).length }}
-      </span>
+      <span class="stat-value positive">{{ gainersCount() }}</span>
     </div>
     <div class="stat">
       <span class="stat-label">Losers:</span>
-      <span class="stat-value negative">
-        {{ coins().filter((c) => c.change24h < 0).length }}
-      </span>
+      <span class="stat-value negative">{{ losersCount() }}</span>
     </div>
   </div>
 
