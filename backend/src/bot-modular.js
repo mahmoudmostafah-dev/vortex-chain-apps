@@ -9,6 +9,7 @@ const ExchangeService = require('./services/exchange');
 const WebSocketService = require('./services/websocket');
 const TechnicalAnalysisService = require('./services/technical-analysis');
 const Helpers = require('./utils/helpers');
+const Diagnostics = require('./utils/diagnostics');
 
 class VortexChainBot {
   constructor() {
@@ -118,7 +119,8 @@ class VortexChainBot {
     }
   }
 
-  async getTopVolumeCoins(limit = 30) {
+  async getTopVolumeCoins(limit = 50) {
+    // ✅ زيادة من 30 إلى 50 عملة
     try {
       const tickers = this.ws.isConnected()
         ? this.ws.getTickersCache()
@@ -146,6 +148,11 @@ class VortexChainBot {
         .slice(0, limit)
         .map(([symbol]) => symbol);
 
+      this.logger.info(
+        `✅ Filtered ${sortedByVolume.length} coins from ${
+          Object.keys(tickers).length
+        } total`
+      ); // ✅ لوج للتتبع
       return sortedByVolume;
     } catch (err) {
       this.logger.error(`Get top volume error: ${err.message}`);
@@ -155,10 +162,10 @@ class VortexChainBot {
 
   async scanMarket() {
     const signals = [];
-    const topCoins = await this.getTopVolumeCoins(30);
+    const topCoins = await this.getTopVolumeCoins(50); // ✅ زيادة من 30 إلى 50
 
     if (topCoins.length === 0) {
-      this.logger.warning('No coins to scan');
+      this.logger.warning('⚠️ No coins passed filters - check filter settings');
       return signals;
     }
 
@@ -209,7 +216,9 @@ class VortexChainBot {
 🎲 Status: ${
           analysis.strength === 'STRONG'
             ? '🔥 STRONG BUY SIGNAL'
-            : '⚠️ Medium Signal'
+            : analysis.strength === 'MEDIUM'
+            ? '⚡ MEDIUM BUY SIGNAL'
+            : '⚠️ Weak Signal'
         }`;
 
         await this.telegram.sendWithCooldown(symbol, msg, 'scan');
@@ -499,8 +508,20 @@ ${symbol}
     }
   }
 
+  async runDiagnostics() {
+    this.logger.info('🔍 Running diagnostics...');
+    const report = await Diagnostics.runFullDiagnostic(this);
+    const formatted = Diagnostics.formatReport(report);
+    await this.telegram.send(formatted);
+    this.logger.info(formatted);
+    return report;
+  }
+
   async start() {
     await this.init();
+
+    // ✅ تشخيص أولي بعد البدء
+    setTimeout(() => this.runDiagnostics(), 30000); // بعد 30 ثانية
 
     while (true) {
       try {
@@ -520,6 +541,14 @@ ${symbol}
           Object.keys(this.positions).length < this.config.risk.maxPositions
         ) {
           const signals = await this.scanMarket();
+
+          // ✅ لوج تشخيصي
+          if (signals.length === 0) {
+            this.logger.warning(`⚠️ No signals found in this scan cycle`);
+          } else {
+            this.logger.success(`✅ Found ${signals.length} signal(s)`);
+          }
+
           for (const signal of signals) {
             if (
               Object.keys(this.positions).length >=
@@ -528,6 +557,10 @@ ${symbol}
               break;
             await this.openPosition(signal);
           }
+        } else {
+          this.logger.info(
+            `📊 Max positions reached (${this.config.risk.maxPositions})`
+          );
         }
 
         // فحص الأوامر المعلقة

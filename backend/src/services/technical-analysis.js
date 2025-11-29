@@ -91,18 +91,25 @@ class TechnicalAnalysisService {
       const sma50Val = sma50.slice(-1)[0];
       const sma200Val = sma200.slice(-1)[0];
 
-      // ✅ الجديد: شروط أكثر واقعية وتكرار
+      // ✅ شروط محسّنة - أكثر واقعية وتكرار
       const macdCrossUp = macdLine > signalLine && prevMacd <= prevSignal;
-      const trendFollowing = price > sma50Val; // اتجاه صاعد بسيط - أعلى من SMA50
-      const momentumPositive = macdCrossUp && volSurge; // زخم إيجابي
-      const notOverbought = currentRsi < rsiBuyZoneMax; // منطقة آمنة (65)
-      const aboveMa200 = price > sma200Val; // فوق المتوسط الطويل الأجل
+      const macdPositive = macdLine > signalLine; // ✅ جديد: MACD فوق الإشارة (بدون كروس)
+      const trendFollowing = price > sma50Val; // اتجاه صاعد بسيط
+      const momentumPositive = macdCrossUp || (macdPositive && volSurge); // ✅ زخم مرن
+      const notOverbought = currentRsi < rsiBuyZoneMax; // منطقة آمنة (70)
+      const aboveMa200 = price > sma200Val; // فوق المتوسط الطويل
+      const rsiInBuyZone =
+        currentRsi >= rsiBuyZoneMin && currentRsi < rsiBuyZoneMax; // ✅ RSI في منطقة الشراء
 
-      const strongSignal =
-        trendFollowing && momentumPositive && notOverbought && aboveMa200;
+      // ✅ إشارة قوية: 3 شروط فقط (بدلاً من 4)
+      const strongSignal = trendFollowing && momentumPositive && notOverbought;
 
+      // ✅ إشارة متوسطة: شروط أكثر مرونة
       const mediumSignal =
-        macdCrossUp && volSurge && trendFollowing && currentRsi < rsiOverbought; // مرن أكثر (70)
+        (macdPositive || volSurge) &&
+        trendFollowing &&
+        currentRsi < rsiOverbought &&
+        rsiInBuyZone;
 
       return {
         price,

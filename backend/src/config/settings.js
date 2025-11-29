@@ -60,10 +60,10 @@ module.exports = {
 
   // Filters
   filters: {
-    minVolume: 10_000_000,
-    minPrice: 0.05,
-    maxChange24h: 50,
-    minChange24h: -15,
+    minVolume: 5_000_000, // ✅ خفض من 10M إلى 5M - عملات أكثر
+    minPrice: 0.01, // ✅ خفض من 0.05 إلى 0.01 - عملات رخيصة
+    maxChange24h: 100, // ✅ رفع من 50 إلى 100 - يسمح بعملات متحركة
+    minChange24h: -30, // ✅ خفض من -15 إلى -30 - يسمح بانتعاش بعد هبوط
     excludeCoins: ['BUSD', 'UP', 'DOWN', 'BULL', 'BEAR'],
   },
 
@@ -77,10 +77,10 @@ module.exports = {
     macdSlow: 26,
     macdSignal: 9,
     volumeSmaShort: 20,
-    volumeSurgeMultiplier: 1.5,
+    volumeSurgeMultiplier: 1.3, // ✅ خفض من 1.5 إلى 1.3 - حجم أقل صرامة
     rsiBuyZoneMin: 30,
-    rsiBuyZoneMax: 65, // ✅ رفع من 55 إلى 65 - شروط أكثر مرونة
-    rsiOverbought: 70, // حد الشراء الزائد للإشارات المتوسطة
+    rsiBuyZoneMax: 70, // ✅ رفع من 65 إلى 70 - مرونة أكبر
+    rsiOverbought: 75, // ✅ رفع من 70 إلى 75 - يسمح بزخم أقوى
   },
 
   // Database
