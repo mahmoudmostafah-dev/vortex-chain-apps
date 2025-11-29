@@ -101,13 +101,22 @@ class TechnicalAnalysisService {
         volumes[volumes.length - 1] >
           currentAvgVol * this.config.indicators.volumeSurgeMultiplier;
 
-      // ATR
-      const atrData = await this.calculateATR({
-        high: ohlcv.map((c) => c[2]),
-        low: ohlcv.map((c) => c[3]),
-        close: closes,
-      });
-      const currentAtr = atrData.slice(-1)[0];
+      // ATR - تحضير البيانات بالشكل الصحيح
+      const highs = ohlcv.map((c) => c[2]);
+      const lows = ohlcv.map((c) => c[3]);
+
+      let currentAtr = 0;
+      try {
+        const atrData = await this.calculateATR({
+          high: highs,
+          low: lows,
+          close: closes,
+        });
+        currentAtr = atrData && atrData.length > 0 ? atrData.slice(-1)[0] : 0;
+      } catch (err) {
+        console.log(`[TA] ATR calculation failed, using 0:`, err.message);
+        currentAtr = 0;
+      }
 
       // الشروط المحسّنة - أكثر واقعية وتكرار
       const sma50Val = sma50.slice(-1)[0];
