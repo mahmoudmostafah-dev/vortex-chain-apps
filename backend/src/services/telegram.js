@@ -12,9 +12,15 @@ class TelegramService {
 
   async send(message) {
     try {
-      await this.bot.sendMessage(this.chatId, message + '\n\n#VortexChain');
+      await this.bot.sendMessage(this.chatId, message + '\n\n#VortexChain', {
+        parse_mode: 'HTML',
+      });
     } catch (err) {
       console.error('Telegram error:', err.message);
+      // ✅ لوج تفصيلي للتشخيص
+      if (err.response) {
+        console.error('Telegram response:', err.response.body);
+      }
     }
   }
 

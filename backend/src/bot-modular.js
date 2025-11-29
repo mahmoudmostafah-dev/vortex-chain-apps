@@ -29,6 +29,8 @@ class VortexChainBot {
     this.lastMarketUpdate = 0;
     this.lastReport = 0;
     this.isConnected = false;
+    this.paperTrading = this.config.trading.paperTrading; // ✅ وضع التداول الوهمي
+    this.paperOrderId = 1000; // ✅ معرف الأوامر الوهمية
   }
 
   async init() {
@@ -48,9 +50,13 @@ class VortexChainBot {
       );
     }
 
-    await this.telegram.send(`🚀 Vortex-Chain v5.0 MODULAR Edition LIVE!
+    await this.telegram.send(`🚀 Vortex-Chain v5.0 MODULAR Edition ${
+      this.paperTrading ? '📝 PAPER TRADING' : 'LIVE'
+    }!
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💰 Balance: ${Helpers.formatMoney(this.balance)}
+${
+  this.paperTrading ? '📝 MODE: PAPER TRADING (TEST)\n' : ''
+}💰 Balance: ${Helpers.formatMoney(this.balance)}
 📊 Max Positions: ${this.config.risk.maxPositions}
 💵 Risk per Trade: ${this.config.risk.riskPercentage}%
 📉 Stop Loss: ${this.config.risk.stopLossPercent}%
@@ -61,13 +67,27 @@ class VortexChainBot {
 🛡️ Daily Loss Limit: ${this.config.risk.maxDailyLoss}%
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🔍 Auto-scanning top coins by volume...
-⚠️ USING WEBSOCKET + LIMIT ORDERS`);
+⚠️ USING WEBSOCKET + LIMIT ORDERS${
+      this.paperTrading ? '\n\n⚠️ NO REAL MONEY - TESTING ONLY' : ''
+    }`);
 
     this.isConnected = true;
   }
 
   async updateBalance() {
     try {
+      // ✅ وضع التداول الوهمي
+      if (this.paperTrading) {
+        if (this.balance === 0) {
+          this.balance = this.config.trading.paperBalance;
+          this.initialBalance = this.balance;
+          this.logger.info(
+            `📝 Paper Trading Mode: Starting with $${this.balance}`
+          );
+        }
+        return this.balance;
+      }
+
       const balance = await this.exchange.fetchBalance();
       this.balance = balance.USDT?.free || 0;
 
@@ -251,6 +271,50 @@ class VortexChainBot {
     }
 
     try {
+      const amount = Number((positionUsd / price).toFixed(8));
+      const limitPrice = Helpers.calculateBuyPrice(
+        price,
+        this.config.risk.maxBuySlippage
+      );
+
+      // ✅ وضع التداول الوهمي
+      if (this.paperTrading) {
+        const orderId = `PAPER_${this.paperOrderId++}`;
+
+        this.logger.info(
+          `📝 PAPER: Limit BUY order placed: ${symbol} @ ${limitPrice} | Amount: ${amount}`
+        );
+
+        this.pendingOrders[symbol] = {
+          orderId,
+          side: 'buy',
+          price: limitPrice,
+          amount,
+          timestamp: Date.now(),
+          signal,
+          paper: true,
+        };
+
+        const msg = `📝 PAPER TRADING - LIMIT BUY ORDER
+${symbol}
+💰 Limit Price: ${Helpers.formatPrice(limitPrice)}
+📊 Amount: ${amount}
+💵 Position: ${Helpers.formatMoney(positionUsd)}
+🎯 RSI: ${signal.currentRsi.toFixed(1)}
+📏 ATR: ${currentAtr.toFixed(4)}
+⚡ Signal: ${strength}
+⏰ Simulating execution in 10 seconds...
+
+⚠️ NO REAL MONEY - TESTING ONLY`;
+
+        await this.telegram.send(msg);
+
+        // محاكاة التنفيذ بعد 10 ثواني
+        setTimeout(() => this.checkPendingOrder(symbol), 10000);
+        return;
+      }
+
+      // التداول الحقيقي
       const market = await this.exchange.getMarket(symbol);
       const minCost = market.limits?.cost?.min || 10;
 
@@ -260,12 +324,6 @@ class VortexChainBot {
         );
         return;
       }
-
-      const amount = Number((positionUsd / price).toFixed(8));
-      const limitPrice = Helpers.calculateBuyPrice(
-        price,
-        this.config.risk.maxBuySlippage
-      );
 
       const order = await this.exchange.createLimitBuyOrder(
         symbol,
@@ -320,6 +378,63 @@ ${symbol}
     if (!pending) return;
 
     try {
+      // ✅ وضع التداول الوهمي - محاكاة التنفيذ
+      if (this.paperTrading && pending.paper) {
+        const avgPrice = pending.price;
+        const filledAmount = pending.amount;
+
+        const stopLoss = Helpers.calculateStopLoss(
+          avgPrice,
+          this.config.risk.stopLossPercent
+        );
+        const takeProfit = Helpers.calculateTakeProfit(
+          avgPrice,
+          this.config.risk.takeProfitPercent
+        );
+
+        this.positions[symbol] = {
+          entry: avgPrice,
+          amount: filledAmount,
+          highest: avgPrice,
+          stopLoss,
+          takeProfit,
+          atrStop: null,
+          atr: pending.signal.currentAtr || null,
+          paper: true,
+        };
+
+        // خصم من الرصيد الوهمي
+        const cost = avgPrice * filledAmount;
+        this.balance -= cost;
+
+        await this.database.savePosition(symbol, this.positions[symbol]);
+        await this.database.saveTrade({
+          symbol,
+          side: 'BUY',
+          entryPrice: avgPrice,
+          amount: filledAmount,
+          reason: `Paper Trading - Simulated Buy`,
+        });
+
+        const feeBuy = avgPrice * filledAmount * 0.001;
+        const msg = `✅ 📝 PAPER BUY EXECUTED ${symbol}
+� Entr y: ${Helpers.formatPrice(avgPrice)}
+� Ameount: ${filledAmount}
+💵 Total: ${Helpers.formatMoney(cost)}
+📉 Stop Loss: ${Helpers.formatPrice(stopLoss)}
+📈 Take Profit: ${Helpers.formatPrice(takeProfit)}
+💸 Fee: ${feeBuy.toFixed(4)}
+💰 Balance: ${Helpers.formatMoney(this.balance)}
+
+⚠️ NO REAL MONEY - TESTING ONLY`;
+
+        await this.telegram.send(msg);
+        delete this.pendingOrders[symbol];
+        this.logger.success(`📝 PAPER BUY executed: ${symbol} @ ${avgPrice}`);
+        return;
+      }
+
+      // التداول الحقيقي
       const order = await this.exchange.fetchOrder(pending.orderId, symbol);
 
       if (order.status === 'closed' || order.filled > 0) {
@@ -392,6 +507,58 @@ ${symbol}
         this.config.risk.maxBuySlippage
       );
 
+      // ✅ وضع التداول الوهمي
+      if (this.paperTrading && pos.paper) {
+        const profit = Helpers.calculateProfitPercent(pos.entry, currentPrice);
+        const profitUsdt = Helpers.calculateProfitUsdt(
+          pos.entry,
+          currentPrice,
+          pos.amount
+        );
+        const feeSell = currentPrice * pos.amount * 0.001;
+        const netProfit = profitUsdt - feeSell;
+
+        // إضافة للرصيد الوهمي
+        const saleAmount = currentPrice * pos.amount;
+        this.balance += saleAmount;
+
+        await this.database.saveTrade({
+          symbol,
+          side: 'SELL',
+          entryPrice: pos.entry,
+          exitPrice: currentPrice,
+          amount: pos.amount,
+          profitPercent: profit,
+          profitUsdt: netProfit,
+          fees: feeSell,
+          reason: `Paper Trading - ${reason}`,
+        });
+
+        delete this.positions[symbol];
+        await this.database.deletePosition(symbol);
+
+        const emoji = profit > 0 ? '🟢' : '🔴';
+        const msg = `${emoji} 📝 PAPER SELL ${symbol}
+💰 Entry: ${Helpers.formatPrice(pos.entry)}
+💵 Exit: ${Helpers.formatPrice(currentPrice)}
+📊 Profit: ${Helpers.formatPercent(profit)}
+💵 P/L: ${netProfit > 0 ? '+' : ''}${Helpers.formatMoney(netProfit)}
+💸 Fee: ${feeSell.toFixed(4)}
+💰 Balance: ${Helpers.formatMoney(this.balance)}
+📝 Reason: ${reason}
+
+⚠️ NO REAL MONEY - TESTING ONLY`;
+
+        await this.telegram.send(msg);
+        this.logger.trade(
+          `📝 PAPER SELL ${symbol} | Entry: ${
+            pos.entry
+          } | Exit: ${currentPrice} | P/L: ${profit.toFixed(2)}%`
+        );
+        return;
+      }
+
+      // التداول الحقيقي
       await this.exchange.createLimitSellOrder(symbol, pos.amount, limitPrice);
 
       const profit = Helpers.calculateProfitPercent(pos.entry, currentPrice);

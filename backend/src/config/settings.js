@@ -12,7 +12,8 @@ module.exports = {
   // Telegram
   telegram: {
     token: process.env.TELEGRAM_TOKEN,
-    chatId: process.env.TELEGRAM_CHAT_ID,
+    chatId:
+      Number(process.env.TELEGRAM_CHAT_ID) || process.env.TELEGRAM_CHAT_ID, // ✅ تحويل لرقم
   },
 
   // Risk Management
@@ -35,6 +36,8 @@ module.exports = {
     ohlcvTimeframe: '15m',
     ohlcvLimit: 200,
     priceCheckInterval: 100, // ms between price checks
+    paperTrading: process.env.PAPER_TRADING === 'true', // ✅ وضع التداول الوهمي
+    paperBalance: Number(process.env.PAPER_BALANCE) || 1000, // ✅ رصيد وهمي
   },
 
   // Cache
