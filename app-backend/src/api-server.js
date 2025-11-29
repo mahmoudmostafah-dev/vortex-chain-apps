@@ -203,6 +203,94 @@ class ApiServer {
         });
       }
     });
+
+    // Get daily stats for reports
+    this.app.get('/api/stats/daily', async (req, res) => {
+      try {
+        const period = req.query.period || 'week';
+        const periodMap = {
+          week: 7,
+          month: 30,
+          year: 365,
+        };
+
+        const days = periodMap[period] || 7;
+        const dailyStats = [];
+
+        for (let i = days - 1; i >= 0; i--) {
+          const startOfDay = Date.now() - i * 86400000;
+          const endOfDay = startOfDay + 86400000;
+
+          const stats = await this.database.db.get(
+            `SELECT 
+              COUNT(*) as total_trades,
+              SUM(CASE WHEN profit_percent > 0 THEN 1 ELSE 0 END) as wins,
+              SUM(CASE WHEN profit_percent <= 0 THEN 1 ELSE 0 END) as losses,
+              SUM(profit_usdt) as total_profit,
+              AVG(profit_percent) as avg_profit,
+              SUM(fees) as total_fees
+            FROM trades 
+            WHERE timestamp >= ? AND timestamp < ? AND side = 'SELL'`,
+            [startOfDay, endOfDay]
+          );
+
+          const winRate =
+            stats.total_trades > 0
+              ? (stats.wins / stats.total_trades) * 100
+              : 0;
+
+          dailyStats.push({
+            date: new Date(startOfDay).toISOString().split('T')[0],
+            total_trades: stats.total_trades || 0,
+            wins: stats.wins || 0,
+            losses: stats.losses || 0,
+            win_rate: winRate,
+            total_profit: stats.total_profit || 0,
+            avg_profit: stats.avg_profit || 0,
+            total_fees: stats.total_fees || 0,
+          });
+        }
+
+        res.json({
+          success: true,
+          data: dailyStats,
+        });
+      } catch (err) {
+        res.status(500).json({
+          success: false,
+          error: err.message,
+        });
+      }
+    });
+
+    // Get logs
+    this.app.get('/api/logs', async (req, res) => {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const date = req.query.date || new Date().toISOString().split('T')[0];
+        const logFile = path.join(this.config.logging.logDir, `${date}.log`);
+
+        if (!fs.existsSync(logFile)) {
+          return res.status(404).json({
+            success: false,
+            error: 'Log file not found',
+          });
+        }
+
+        const logs = fs.readFileSync(logFile, 'utf-8');
+        res.json({
+          success: true,
+          data: logs,
+          date,
+        });
+      } catch (err) {
+        res.status(500).json({
+          success: false,
+          error: err.message,
+        });
+      }
+    });
   }
 
   start() {

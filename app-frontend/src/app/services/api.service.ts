@@ -57,11 +57,12 @@ export class ApiService {
     try {
       const response = await fetch(`${this.API_URL}/trades?period=${period}`);
       if (!response.ok) throw new Error('Failed to fetch trades');
-      const data = await response.json();
-      this.trades.set(data);
+      const result = await response.json();
+      this.trades.set(result.success ? result.data : []);
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Unknown error');
       console.error('Error fetching trades:', err);
+      this.trades.set([]);
     } finally {
       this.loading.set(false);
     }
@@ -74,11 +75,12 @@ export class ApiService {
     try {
       const response = await fetch(`${this.API_URL}/positions`);
       if (!response.ok) throw new Error('Failed to fetch positions');
-      const data = await response.json();
-      this.positions.set(data);
+      const result = await response.json();
+      this.positions.set(result.success ? result.data : []);
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Unknown error');
       console.error('Error fetching positions:', err);
+      this.positions.set([]);
     } finally {
       this.loading.set(false);
     }
@@ -90,12 +92,13 @@ export class ApiService {
 
     try {
       const response = await fetch(`${this.API_URL}/stats/daily?period=${period}`);
-      if (!response.ok) throw new Error('Failed to fetch stats');
-      const data = await response.json();
-      this.dailyStats.set(data);
+      if (!response.ok) throw new Error('Failed to fetch daily stats');
+      const result = await response.json();
+      this.dailyStats.set(result.success ? result.data : []);
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Unknown error');
       console.error('Error fetching stats:', err);
+      this.dailyStats.set([]);
     } finally {
       this.loading.set(false);
     }
@@ -106,7 +109,8 @@ export class ApiService {
       const url = date ? `${this.API_URL}/logs?date=${date}` : `${this.API_URL}/logs`;
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch logs');
-      return await response.text();
+      const result = await response.json();
+      return result.success ? result.data : 'No logs available';
     } catch (err) {
       console.error('Error fetching logs:', err);
       throw err;
