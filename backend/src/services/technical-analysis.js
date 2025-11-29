@@ -60,6 +60,9 @@ class TechnicalAnalysisService {
       const rsiData = await this.calculateRSI(closes, rsiPeriod);
 
       if (!sma50 || !sma200 || !rsiData) {
+        console.log(
+          `[TA] Indicator failed - SMA50: ${!!sma50}, SMA200: ${!!sma200}, RSI: ${!!rsiData}`
+        );
         return null;
       }
 
@@ -67,6 +70,9 @@ class TechnicalAnalysisService {
 
       const macdData = await this.calculateMACD(closes);
       if (!macdData || !macdData.MACD || !macdData.signal) {
+        console.log(
+          `[TA] MACD failed - Data: ${!!macdData}, MACD: ${!!macdData?.MACD}, Signal: ${!!macdData?.signal}`
+        );
         return null;
       }
 
