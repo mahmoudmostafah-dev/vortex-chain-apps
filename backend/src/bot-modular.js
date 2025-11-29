@@ -250,6 +250,33 @@ ${symbol} Analysis:
           }`;
 
           this.logger.info(conditions);
+
+          // ✅ إرسال التحليل التفصيلي على Telegram
+          if (analysis.isSignal) {
+            const telegramMsg = `🔍 ${symbol} Analysis:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💰 Price: $${analysis.price.toFixed(4)}
+📊 24h Vol: ${Helpers.formatVolume(volume24h)}
+📈 24h Δ: ${Helpers.formatPercent(change24h)}
+
+📊 Technical Indicators:
+├─ RSI: ${analysis.currentRsi.toFixed(1)} ${analysis.rsiInBuyZone ? '✅' : '❌'}
+├─ Trend (>SMA50): ${analysis.trendFollowing ? '✅' : '❌'}
+├─ Above SMA200: ${analysis.aboveMa200 ? '✅' : '❌'}
+├─ MACD Cross: ${analysis.macdCrossUp ? '✅' : '❌'}
+├─ MACD Positive: ${analysis.macdPositive ? '✅' : '❌'}
+├─ Volume Surge: ${analysis.volSurge ? '✅' : '❌'}
+├─ Not Overbought: ${analysis.notOverbought ? '✅' : '❌'}
+└─ Momentum: ${analysis.momentumPositive ? '✅' : '❌'}
+
+🎲 Result: ${
+              analysis.strength === 'STRONG'
+                ? '🔥 STRONG BUY SIGNAL'
+                : '⚡ MEDIUM BUY SIGNAL'
+            }`;
+
+            await this.telegram.sendWithCooldown(symbol, telegramMsg, 'scan');
+          }
         }
 
         if (!analysis || !analysis.isSignal) continue;
@@ -260,26 +287,6 @@ ${symbol} Analysis:
           volume24h,
           change24h,
         });
-
-        const msg = `🔍 Scan: ${symbol}
-💰 Price: ${Helpers.formatPrice(analysis.price)}
-📊 24h Vol: ${Helpers.formatVolume(volume24h)}
-📈 24h Δ: ${Helpers.formatPercent(change24h)}
-🎯 RSI: ${analysis.currentRsi.toFixed(1)}
-⚡ Momentum: ${analysis.momentumPositive ? 'BULLISH 📈' : 'BEARISH 📉'}
-📍 Above SMA50: ${analysis.trendFollowing ? 'YES ✅' : 'NO ❌'}
-📍 Above SMA200: ${analysis.aboveMa200 ? 'YES ✅' : 'NO ❌'}
-⚖️ Overbought: ${analysis.notOverbought ? 'NO ✅' : 'YES ⚠️'}
-📏 ATR: ${analysis.currentAtr.toFixed(4)}
-🎲 Status: ${
-          analysis.strength === 'STRONG'
-            ? '🔥 STRONG BUY SIGNAL'
-            : analysis.strength === 'MEDIUM'
-            ? '⚡ MEDIUM BUY SIGNAL'
-            : '⚠️ Weak Signal'
-        }`;
-
-        await this.telegram.sendWithCooldown(symbol, msg, 'scan');
       } catch (err) {
         this.logger.warning(`Scan error ${symbol}: ${err.message}`);
       }
