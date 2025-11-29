@@ -952,9 +952,16 @@ ${symbol}
               break;
             await this.openPosition(signal);
           }
-        } else {
+        } else if (this.marketMonitor.isProtectionActive()) {
+          const remaining = this.marketMonitor.getProtectionTimeRemaining();
+          this.logger.warning(
+            `🔒 Capital Protection active - Trading blocked (${remaining} min remaining)`
+          );
+        } else if (
+          Object.keys(this.positions).length >= this.config.risk.maxPositions
+        ) {
           const positionsList = Object.entries(this.positions)
-            .map(([symbol, pos]) => `${symbol} @ $${pos.entry.toFixed(4)}`)
+            .map(([symbol, pos]) => `${symbol} @ ${pos.entry.toFixed(4)}`)
             .join(', ');
           this.logger.info(
             `📊 Max positions reached (${this.config.risk.maxPositions}): ${positionsList}`
