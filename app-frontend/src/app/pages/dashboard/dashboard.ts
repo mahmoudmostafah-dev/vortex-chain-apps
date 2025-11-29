@@ -9,8 +9,9 @@ import { ApiService } from '../../services/api.service';
   styleUrl: './dashboard.scss',
 })
 export class Dashboard implements OnInit {
-  protected readonly apiService = this.api;
   protected selectedPeriod = signal<'day' | 'week' | 'month' | 'year'>('day');
+
+  constructor(protected readonly api: ApiService) {}
 
   // Computed statistics
   protected stats = computed(() => {
@@ -37,8 +38,6 @@ export class Dashboard implements OnInit {
       openPositions,
     };
   });
-
-  constructor(private api: ApiService) {}
 
   async ngOnInit() {
     await this.loadData();

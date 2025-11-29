@@ -9,8 +9,9 @@ import { ApiService } from '../../services/api.service';
   styleUrl: './reports.scss',
 })
 export class Reports implements OnInit {
-  protected readonly apiService = this.api;
   protected selectedPeriod = signal<'week' | 'month' | 'year'>('week');
+
+  constructor(protected readonly api: ApiService) {}
 
   // Computed chart data
   protected chartData = computed(() => {
@@ -57,8 +58,6 @@ export class Reports implements OnInit {
       netProfit: totalProfit - totalFees,
     };
   });
-
-  constructor(private api: ApiService) {}
 
   async ngOnInit() {
     await this.loadData();
