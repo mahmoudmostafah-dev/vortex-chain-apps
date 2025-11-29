@@ -775,8 +775,11 @@ ${symbol}
             await this.openPosition(signal);
           }
         } else {
+          const positionsList = Object.entries(this.positions)
+            .map(([symbol, pos]) => `${symbol} @ $${pos.entry.toFixed(4)}`)
+            .join(', ');
           this.logger.info(
-            `📊 Max positions reached (${this.config.risk.maxPositions})`
+            `📊 Max positions reached (${this.config.risk.maxPositions}): ${positionsList}`
           );
         }
 
