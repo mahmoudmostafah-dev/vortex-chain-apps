@@ -17,17 +17,14 @@ const ApiServer = require('./src/api-server');
 
 // تشغيل البوت المقسم لملفات منفصلة
 const bot = new VortexChainBot();
-let apiServer;
 
-bot
-  .start()
-  .then(() => {
-    // تشغيل API Server بعد تشغيل البوت
-    apiServer = new ApiServer(bot.config, bot.database, bot.logger);
-    apiServer.setBot(bot);
-    apiServer.init();
-  })
-  .catch((err) => console.error('Bot startup error:', err));
+// تشغيل API Server قبل البوت
+const apiServer = new ApiServer(bot.config, bot.database, bot.logger);
+apiServer.setBot(bot);
+apiServer.init();
+
+// تشغيل البوت (هيدخل في infinite loop)
+bot.start().catch((err) => console.error('Bot startup error:', err));
 
 process.on('SIGINT', () => {
   console.log('\n🛑 Shutting down Vortex-Chain bot...');
