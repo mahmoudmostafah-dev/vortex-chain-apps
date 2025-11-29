@@ -202,8 +202,16 @@ ${
         if (
           volume24h < this.config.filters.minVolume ||
           change24h < this.config.filters.minChange24h
-        )
+        ) {
+          this.logger.info(
+            `⏭️  ${symbol} skipped - Volume: ${(volume24h / 1_000_000).toFixed(
+              1
+            )}M, Change: ${change24h.toFixed(1)}%`
+          );
           continue;
+        }
+
+        this.logger.info(`🔍 Analyzing ${symbol}...`);
 
         const ohlcv = await this.exchange.fetchOHLCV(
           symbol,
@@ -211,7 +219,10 @@ ${
           this.config.trading.ohlcvLimit
         );
 
-        if (!ohlcv) continue;
+        if (!ohlcv) {
+          this.logger.warning(`⚠️  ${symbol} - No OHLCV data`);
+          continue;
+        }
 
         const analysis = await this.technicalAnalysis.analyzeSignal(ohlcv);
 
