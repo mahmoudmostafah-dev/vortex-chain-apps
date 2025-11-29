@@ -1,15 +1,13 @@
 // src/services/telegram.js - خدمة التليجرام
 
-const TelegramBot = require('node-telegram-bot-api');
-
 class TelegramService {
   constructor(config) {
     this.config = config;
-    this.bot = new TelegramBot(config.telegram.token, { polling: false });
+    this.token = config.telegram.token;
     this.chatId = config.telegram.chatId;
     this.lastMessageTime = {};
+    this.apiUrl = `https://api.telegram.org/bot${this.token}`;
 
-    // ✅ لوج تشخيصي
     console.log(
       `[Telegram] Initialized with chatId: ${this.chatId} (type: ${typeof this
         .chatId})`
@@ -18,17 +16,27 @@ class TelegramService {
 
   async send(message) {
     try {
-      // ✅ لوج قبل الإرسال
       console.log(`[Telegram] Attempting to send to chatId: ${this.chatId}`);
 
-      // ✅ إرسال بدون parse_mode لتجنب مشاكل التنسيق
-      const result = await this.bot.sendMessage(
-        this.chatId,
-        message + '\n\n#VortexChain'
-      );
+      const response = await fetch(`${this.apiUrl}/sendMessage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: this.chatId,
+          text: message + '\n\n#VortexChain',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!data.ok) {
+        throw new Error(`Telegram API error: ${data.description}`);
+      }
 
       console.log(`[Telegram] ✅ Message sent successfully`);
-      return result;
+      return data;
     } catch (err) {
       console.error('Telegram error:', err.message);
       console.error(
@@ -37,10 +45,6 @@ class TelegramService {
         'type:',
         typeof this.chatId
       );
-      // ✅ لوج تفصيلي للتشخيص
-      if (err.response) {
-        console.error('Telegram response:', err.response.body);
-      }
     }
   }
 
@@ -67,12 +71,12 @@ class TelegramService {
 Total Trades: ${total || 0}
 Wins: ${wins || 0} | Losses: ${total - wins || 0}
 Win Rate: ${winRate}%
-Total P/L: ${total_profit > 0 ? '+' : ''}$${(total_profit || 0).toFixed(2)}
+Total P/L: ${total_profit > 0 ? '+' : ''}${(total_profit || 0).toFixed(2)}
 Avg P/L: ${avg_profit > 0 ? '+' : ''}${(avg_profit || 0).toFixed(2)}%
-Total Fees: $${(total_fees || 0).toFixed(2)}
+Total Fees: ${(total_fees || 0).toFixed(2)}
 Daily P/L: ${dailyPnL > 0 ? '+' : ''}${dailyPnL.toFixed(2)}%
 Active Positions: ${positionsCount}
-Balance: $${balance.toFixed(2)}
+Balance: ${balance.toFixed(2)}
 ━━━━━━━━━━━━━━━`;
 
     await this.send(report);
