@@ -4,14 +4,23 @@ const express = require('express');
 const cors = require('cors');
 
 class ApiServer {
-  constructor(bot, config) {
-    this.bot = bot;
+  constructor(config, database, logger) {
     this.config = config;
+    this.database = database;
+    this.logger = logger;
+    this.bot = null; // Will be set later
     this.app = express();
     this.port = process.env.API_PORT || 3000;
+  }
 
+  init() {
     this.setupMiddleware();
     this.setupRoutes();
+    this.start();
+  }
+
+  setBot(bot) {
+    this.bot = bot;
   }
 
   setupMiddleware() {
@@ -28,6 +37,13 @@ class ApiServer {
     // Get top coins being scanned
     this.app.get('/api/market/top-coins', async (req, res) => {
       try {
+        if (!this.bot) {
+          return res.status(503).json({
+            success: false,
+            error: 'Bot not initialized yet',
+          });
+        }
+
         const limit = parseInt(req.query.limit) || 50;
         const coins = await this.bot.getTopVolumeCoins(limit);
 
@@ -64,6 +80,13 @@ class ApiServer {
 
     // Get current positions
     this.app.get('/api/positions', (req, res) => {
+      if (!this.bot) {
+        return res.status(503).json({
+          success: false,
+          error: 'Bot not initialized yet',
+        });
+      }
+
       const positions = Object.entries(this.bot.positions).map(
         ([symbol, pos]) => ({
           symbol,
@@ -98,7 +121,7 @@ class ApiServer {
 
         const startTime = Date.now() - (periodMap[period] || 86400000);
 
-        const trades = await this.bot.database.db.all(
+        const trades = await this.database.db.all(
           `SELECT * FROM trades WHERE timestamp > ? ORDER BY timestamp DESC LIMIT ?`,
           [startTime, limit]
         );
@@ -119,7 +142,14 @@ class ApiServer {
     // Get bot stats
     this.app.get('/api/stats', async (req, res) => {
       try {
-        const stats = await this.bot.database.getDailyStats();
+        if (!this.bot) {
+          return res.status(503).json({
+            success: false,
+            error: 'Bot not initialized yet',
+          });
+        }
+
+        const stats = await this.database.getDailyStats();
         const marketStats = this.bot.marketMonitor.getMarketStats();
         const protectionStatus = this.bot.marketMonitor.getProtectionStatus();
 
@@ -145,8 +175,8 @@ class ApiServer {
   }
 
   start() {
-    this.server = this.app.listen(this.port, () => {
-      console.log(`🌐 API Server running on port ${this.port}`);
+    this.server = this.app.listen(this.port, '0.0.0.0', () => {
+      this.logger.success(`🌐 API Server running on port ${this.port}`);
     });
   }
 

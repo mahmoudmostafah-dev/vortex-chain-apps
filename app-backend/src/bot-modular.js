@@ -23,7 +23,6 @@ class VortexChainBot {
     this.ws = new WebSocketService(this.config, this.logger);
     this.technicalAnalysis = new TechnicalAnalysisService(this.config);
     this.marketMonitor = new MarketMonitorService(this.config, this.logger);
-    this.apiServer = new ApiServer(this.config, this.database, this.logger);
 
     this.positions = {};
     this.pendingOrders = {};
@@ -43,9 +42,6 @@ class VortexChainBot {
 
     await this.database.init();
     this.positions = await this.database.getAllPositions();
-
-    // Start API server for dashboard
-    this.apiServer.init();
 
     this.ws.init();
     await this.updateBalance();
