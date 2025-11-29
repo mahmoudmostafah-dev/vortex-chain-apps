@@ -227,6 +227,11 @@ ${
         const analysis = await this.technicalAnalysis.analyzeSignal(ohlcv);
 
         // ✅ لوج تفصيلي لكل عملة
+        if (!analysis) {
+          this.logger.warning(`⚠️  ${symbol} - Analysis returned null`);
+          continue;
+        }
+
         if (analysis) {
           const conditions = `
 ${symbol} Analysis:
