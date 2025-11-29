@@ -101,15 +101,14 @@ class TechnicalAnalysisService {
       const rsiInBuyZone =
         currentRsi >= rsiBuyZoneMin && currentRsi < rsiBuyZoneMax; // ✅ RSI في منطقة الشراء
 
-      // ✅ إشارة قوية: 3 شروط فقط (بدلاً من 4)
-      const strongSignal = trendFollowing && momentumPositive && notOverbought;
+      // ✅ إشارة قوية: شرطين فقط (مخفف للاختبار)
+      const strongSignal = trendFollowing && notOverbought;
 
-      // ✅ إشارة متوسطة: شروط أكثر مرونة
+      // ✅ إشارة متوسطة: شرط واحد + RSI معقول
       const mediumSignal =
-        (macdPositive || volSurge) &&
-        trendFollowing &&
-        currentRsi < rsiOverbought &&
-        rsiInBuyZone;
+        (macdPositive || volSurge || trendFollowing) &&
+        currentRsi > 30 &&
+        currentRsi < 75;
 
       return {
         price,

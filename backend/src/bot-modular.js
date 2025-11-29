@@ -230,12 +230,16 @@ ${
         if (analysis) {
           const conditions = `
 ${symbol} Analysis:
-├─ Price: ${analysis.price.toFixed(4)}
+├─ Price: $${analysis.price.toFixed(4)}
 ├─ RSI: ${analysis.currentRsi.toFixed(1)} ${
             analysis.rsiInBuyZone ? '✅' : '❌'
           } (30-70)
-├─ Trend (>SMA50): ${analysis.trendFollowing ? '✅' : '❌'}
-├─ Above SMA200: ${analysis.aboveMa200 ? '✅' : '❌'}
+├─ Trend (>SMA50): ${
+            analysis.trendFollowing ? '✅' : '❌'
+          } (${analysis.price.toFixed(4)} vs ${analysis.sma50.toFixed(4)})
+├─ Above SMA200: ${analysis.aboveMa200 ? '✅' : '❌'} (${analysis.price.toFixed(
+            4
+          )} vs ${analysis.sma200.toFixed(4)})
 ├─ MACD Cross: ${analysis.macdCrossUp ? '✅' : '❌'}
 ├─ MACD Positive: ${analysis.macdPositive ? '✅' : '❌'}
 ├─ Volume Surge: ${analysis.volSurge ? '✅' : '❌'}
