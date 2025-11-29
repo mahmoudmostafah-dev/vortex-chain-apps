@@ -18,6 +18,9 @@ RUN npm run build -- --configuration production
 # Production stage
 FROM nginx:alpine
 
+# Remove default nginx files
+RUN rm -rf /usr/share/nginx/html/*
+
 # Copy built files to nginx
 COPY --from=build /app/dist/trading-dashboard/browser /usr/share/nginx/html
 
