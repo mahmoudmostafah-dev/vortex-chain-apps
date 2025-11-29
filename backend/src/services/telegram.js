@@ -8,14 +8,35 @@ class TelegramService {
     this.bot = new TelegramBot(config.telegram.token, { polling: false });
     this.chatId = config.telegram.chatId;
     this.lastMessageTime = {};
+
+    // ✅ لوج تشخيصي
+    console.log(
+      `[Telegram] Initialized with chatId: ${this.chatId} (type: ${typeof this
+        .chatId})`
+    );
   }
 
   async send(message) {
     try {
+      // ✅ لوج قبل الإرسال
+      console.log(`[Telegram] Attempting to send to chatId: ${this.chatId}`);
+
       // ✅ إرسال بدون parse_mode لتجنب مشاكل التنسيق
-      await this.bot.sendMessage(this.chatId, message + '\n\n#VortexChain');
+      const result = await this.bot.sendMessage(
+        this.chatId,
+        message + '\n\n#VortexChain'
+      );
+
+      console.log(`[Telegram] ✅ Message sent successfully`);
+      return result;
     } catch (err) {
       console.error('Telegram error:', err.message);
+      console.error(
+        'Telegram chatId:',
+        this.chatId,
+        'type:',
+        typeof this.chatId
+      );
       // ✅ لوج تفصيلي للتشخيص
       if (err.response) {
         console.error('Telegram response:', err.response.body);
