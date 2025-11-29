@@ -69,17 +69,26 @@ class TechnicalAnalysisService {
       const currentRsi = rsiData.slice(-1)[0];
 
       const macdData = await this.calculateMACD(closes);
-      if (!macdData || !macdData.MACD || !macdData.signal) {
-        console.log(
-          `[TA] MACD failed - Data: ${!!macdData}, MACD: ${!!macdData?.MACD}, Signal: ${!!macdData?.signal}`
-        );
+
+      // ✅ تحقق من format المكتبة
+      let macdLine, signalLine, prevMacd, prevSignal;
+
+      if (Array.isArray(macdData)) {
+        // المكتبة بترجع array مباشرة
+        macdLine = macdData[macdData.length - 1];
+        prevMacd = macdData[macdData.length - 2];
+        signalLine = 0;
+        prevSignal = 0;
+      } else if (macdData && macdData.MACD && macdData.signal) {
+        // المكتبة بترجع object
+        macdLine = macdData.MACD.slice(-1)[0];
+        signalLine = macdData.signal.slice(-1)[0];
+        prevMacd = macdData.MACD.slice(-2)[0];
+        prevSignal = macdData.signal.slice(-2)[0];
+      } else {
+        console.log(`[TA] MACD format unknown:`, Object.keys(macdData || {}));
         return null;
       }
-
-      const macdLine = macdData.MACD.slice(-1)[0];
-      const signalLine = macdData.signal.slice(-1)[0];
-      const prevMacd = macdData.MACD.slice(-2)[0];
-      const prevSignal = macdData.signal.slice(-2)[0];
 
       // حجم التداول
       const volumeSma = await this.calculateSMA(
