@@ -118,11 +118,13 @@ class TechnicalAnalysisService {
         sma50: sma50Val,
         sma200: sma200Val,
         macdCrossUp,
+        macdPositive,
         trendFollowing,
         momentumPositive,
         notOverbought,
         aboveMa200,
         volSurge,
+        rsiInBuyZone,
         strength: strongSignal ? 'STRONG' : mediumSignal ? 'MEDIUM' : 'WEAK',
         isSignal: strongSignal || mediumSignal,
       };

@@ -214,6 +214,29 @@ ${
         if (!ohlcv) continue;
 
         const analysis = await this.technicalAnalysis.analyzeSignal(ohlcv);
+
+        // ✅ لوج تفصيلي لكل عملة
+        if (analysis) {
+          const conditions = `
+${symbol} Analysis:
+├─ Price: ${analysis.price.toFixed(4)}
+├─ RSI: ${analysis.currentRsi.toFixed(1)} ${
+            analysis.rsiInBuyZone ? '✅' : '❌'
+          } (30-70)
+├─ Trend (>SMA50): ${analysis.trendFollowing ? '✅' : '❌'}
+├─ Above SMA200: ${analysis.aboveMa200 ? '✅' : '❌'}
+├─ MACD Cross: ${analysis.macdCrossUp ? '✅' : '❌'}
+├─ MACD Positive: ${analysis.macdPositive ? '✅' : '❌'}
+├─ Volume Surge: ${analysis.volSurge ? '✅' : '❌'}
+├─ Not Overbought: ${analysis.notOverbought ? '✅' : '❌'}
+├─ Momentum: ${analysis.momentumPositive ? '✅' : '❌'}
+└─ Result: ${analysis.strength} ${
+            analysis.isSignal ? '🟢 SIGNAL' : '🔴 NO SIGNAL'
+          }`;
+
+          this.logger.info(conditions);
+        }
+
         if (!analysis || !analysis.isSignal) continue;
 
         signals.push({
