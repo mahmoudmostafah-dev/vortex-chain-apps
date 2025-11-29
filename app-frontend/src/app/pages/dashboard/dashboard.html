@@ -15,10 +15,10 @@
     </div>
   </header>
 
-  @if (apiService.loading()) {
+  @if (api.loading()) {
   <div class="loading">Loading...</div>
-  } @if (apiService.error()) {
-  <div class="error">{{ apiService.error() }}</div>
+  } @if (api.error()) {
+  <div class="error">{{ api.error() }}</div>
   }
 
   <div class="stats-grid">
@@ -71,7 +71,7 @@
   <div class="content-grid">
     <section class="positions-section">
       <h2>📊 Open Positions</h2>
-      @if (apiService.positions().length === 0) {
+      @if (api.positions().length === 0) {
       <p class="empty-state">No open positions</p>
       } @else {
       <div class="table-container">
@@ -87,7 +87,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (position of apiService.positions(); track position.symbol) {
+            @for (position of api.positions(); track position.symbol) {
             <tr>
               <td class="symbol">{{ position.symbol }}</td>
               <td>{{ formatMoney(position.entry_price) }}</td>
@@ -105,7 +105,7 @@
 
     <section class="trades-section">
       <h2>💰 Recent Trades</h2>
-      @if (apiService.trades().length === 0) {
+      @if (api.trades().length === 0) {
       <p class="empty-state">No trades in this period</p>
       } @else {
       <div class="table-container">
@@ -123,7 +123,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (trade of apiService.trades(); track trade.id) {
+            @for (trade of api.trades(); track trade.id) {
             <tr>
               <td class="symbol">{{ trade.symbol }}</td>
               <td>

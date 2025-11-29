@@ -14,10 +14,10 @@
     </div>
   </header>
 
-  @if (apiService.loading()) {
+  @if (api.loading()) {
   <div class="loading">Loading reports...</div>
-  } @if (apiService.error()) {
-  <div class="error">{{ apiService.error() }}</div>
+  } @if (api.error()) {
+  <div class="error">{{ api.error() }}</div>
   }
 
   <div class="summary-grid">
@@ -99,7 +99,7 @@
 
   <section class="daily-breakdown">
     <h2>📅 Daily Breakdown</h2>
-    @if (apiService.dailyStats().length === 0) {
+    @if (api.dailyStats().length === 0) {
     <p class="empty-state">No data available for this period</p>
     } @else {
     <div class="table-container">
@@ -117,7 +117,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (stat of apiService.dailyStats(); track stat.date) {
+          @for (stat of api.dailyStats(); track stat.date) {
           <tr>
             <td class="date">{{ formatDate(stat.date) }}</td>
             <td>{{ stat.total_trades }}</td>
