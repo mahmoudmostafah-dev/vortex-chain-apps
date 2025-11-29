@@ -97,4 +97,14 @@ module.exports = {
     maxLogSize: '10m',
     maxLogFiles: 3,
   },
+
+  // Capital Protection (حماية رأس المال)
+  protection: {
+    enabled: process.env.CAPITAL_PROTECTION === 'true' || true, // ✅ مفعّل افتراضياً
+    btcDropThreshold: -1.5, // BTC نزل -1.5% في 5 دقائق
+    redMarketThreshold: 70, // 70% من العملات حمراء
+    protectionDurationMin: 2, // ساعتين كحد أدنى
+    protectionDurationMax: 4, // 4 ساعات كحد أقصى
+    checkInterval: 60000, // فحص كل دقيقة
+  },
 };

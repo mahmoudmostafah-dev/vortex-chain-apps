@@ -8,6 +8,7 @@ const LoggerService = require('./services/logger');
 const ExchangeService = require('./services/exchange');
 const WebSocketService = require('./services/websocket');
 const TechnicalAnalysisService = require('./services/technical-analysis');
+const MarketMonitorService = require('./services/market-monitor');
 const Helpers = require('./utils/helpers');
 const Diagnostics = require('./utils/diagnostics');
 
@@ -20,6 +21,7 @@ class VortexChainBot {
     this.exchange = new ExchangeService(this.config, this.logger);
     this.ws = new WebSocketService(this.config, this.logger);
     this.technicalAnalysis = new TechnicalAnalysisService(this.config);
+    this.marketMonitor = new MarketMonitorService(this.config, this.logger);
 
     this.positions = {};
     this.pendingOrders = {};
@@ -825,6 +827,76 @@ ${symbol}
     }
   }
 
+  async checkCapitalProtection() {
+    try {
+      // تحديث سعر BTC
+      const btcTicker = await this.exchange.fetchTicker('BTC/USDT');
+      this.marketMonitor.updateBtcPrice(btcTicker.last);
+
+      // تحديث معنويات السوق
+      const tickers = this.ws.isConnected()
+        ? this.ws.getTickersCache()
+        : await this.exchange.fetchTickers();
+      const sentiment = this.marketMonitor.updateMarketSentiment(tickers);
+
+      // فحص حالة السوق
+      const crashCheck = this.marketMonitor.checkMarketCrash();
+
+      // إذا تم اكتشاف انهيار
+      if (crashCheck.triggered && !this.marketMonitor.isProtectionActive()) {
+        const reason = crashCheck.btcCrash
+          ? `BTC dropped ${crashCheck.btcChange}% in 5 minutes`
+          : `Market crash detected: ${sentiment.redPercentage.toFixed(1)}% red`;
+
+        // تحديد مدة الحماية (2-4 ساعات حسب شدة الانهيار)
+        const severity = Math.abs(parseFloat(crashCheck.btcChange));
+        const duration =
+          severity > 3
+            ? this.config.protection.protectionDurationMax
+            : this.config.protection.protectionDurationMin;
+
+        this.marketMonitor.activateProtection(reason, duration);
+
+        // إلغاء جميع الأوامر المعلقة
+        const canceledOrders = Object.keys(this.pendingOrders);
+        this.pendingOrders = {};
+
+        const msg = `🔒 CAPITAL PROTECTION MODE ACTIVATED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ Reason: ${reason}
+📊 BTC Change (5min): ${crashCheck.btcChange}%
+🔴 Red Market: ${sentiment.redPercentage.toFixed(1)}%
+⏰ Duration: ${duration} hours
+🚫 Canceled ${canceledOrders.length} pending orders
+🔒 New trades blocked until ${new Date(
+          Date.now() + duration * 60 * 60 * 1000
+        ).toLocaleString()}
+
+💡 Existing positions will be monitored normally.`;
+
+        await this.telegram.send(msg);
+        this.logger.warning(msg);
+      }
+
+      // إذا انتهى وضع الحماية
+      if (
+        this.marketMonitor.protectionMode &&
+        !this.marketMonitor.isProtectionActive()
+      ) {
+        const msg = `✅ CAPITAL PROTECTION MODE DEACTIVATED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🟢 Market conditions normalized
+📊 BTC Change (5min): ${crashCheck.btcChange}%
+✅ Trading resumed`;
+
+        await this.telegram.send(msg);
+        this.logger.success(msg);
+      }
+    } catch (err) {
+      this.logger.error(`Capital protection check error: ${err.message}`);
+    }
+  }
+
   async runDiagnostics() {
     this.logger.info('🔍 Running diagnostics...');
     const report = await Diagnostics.runFullDiagnostic(this);
@@ -842,6 +914,11 @@ ${symbol}
 
     while (true) {
       try {
+        // ✅ فحص حماية رأس المال
+        if (this.config.protection.enabled) {
+          await this.checkCapitalProtection();
+        }
+
         // تحديث الأسواق
         if (
           Date.now() - this.lastMarketUpdate >
@@ -853,9 +930,10 @@ ${symbol}
         // إدارة الصفقات
         await this.managePositions();
 
-        // البحث عن فرص جديدة
+        // البحث عن فرص جديدة (إلا إذا كان وضع الحماية مفعّل)
         if (
-          Object.keys(this.positions).length < this.config.risk.maxPositions
+          Object.keys(this.positions).length < this.config.risk.maxPositions &&
+          !this.marketMonitor.isProtectionActive()
         ) {
           const signals = await this.scanMarket();
 
