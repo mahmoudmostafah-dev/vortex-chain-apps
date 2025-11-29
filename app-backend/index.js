@@ -13,17 +13,29 @@ console.log(
 );
 
 const VortexChainBot = require('./src/bot-modular');
+const ApiServer = require('./src/api-server');
 
 // تشغيل البوت المقسم لملفات منفصلة
 const bot = new VortexChainBot();
-bot.start().catch((err) => console.error('Bot startup error:', err));
+let apiServer;
+
+bot
+  .start()
+  .then(() => {
+    // تشغيل API Server بعد تشغيل البوت
+    apiServer = new ApiServer(bot, bot.config);
+    apiServer.start();
+  })
+  .catch((err) => console.error('Bot startup error:', err));
 
 process.on('SIGINT', () => {
   console.log('\n🛑 Shutting down Vortex-Chain bot...');
+  if (apiServer) apiServer.stop();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.log('\n🛑 Bot terminated');
+  if (apiServer) apiServer.stop();
   process.exit(0);
 });

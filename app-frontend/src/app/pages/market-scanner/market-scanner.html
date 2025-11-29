@@ -1,0 +1,93 @@
+<div class="market-scanner">
+  <header class="scanner-header">
+    <div class="header-left">
+      <h1>🔍 Market Scanner</h1>
+      <p class="subtitle">Top 50 coins sorted by strongest change</p>
+    </div>
+    <div class="header-right">
+      <div class="refresh-controls">
+        <button class="btn-refresh" (click)="loadCoins()" [disabled]="loading()">
+          <span [class.spinning]="loading()">🔄</span> Refresh
+        </button>
+        <label class="auto-refresh">
+          <input type="checkbox" [checked]="autoRefresh()" (change)="toggleAutoRefresh()" />
+          Auto-refresh (1min)
+        </label>
+      </div>
+      @if (lastUpdate()) {
+      <div class="last-update">Last update: {{ formatTime(lastUpdate()) }}</div>
+      }
+    </div>
+  </header>
+
+  @if (loading() && coins().length === 0) {
+  <div class="loading">
+    <div class="spinner"></div>
+    <p>Scanning market...</p>
+  </div>
+  } @if (error()) {
+  <div class="error">
+    <span>❌</span>
+    <p>{{ error() }}</p>
+    <button (click)="loadCoins()">Retry</button>
+  </div>
+  } @if (coins().length > 0) {
+  <div class="stats-bar">
+    <div class="stat">
+      <span class="stat-label">Total Coins:</span>
+      <span class="stat-value">{{ coins().length }}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Gainers:</span>
+      <span class="stat-value positive">
+        {{ coins().filter((c) => c.change24h > 0).length }}
+      </span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Losers:</span>
+      <span class="stat-value negative">
+        {{ coins().filter((c) => c.change24h < 0).length }}
+      </span>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table class="coins-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Symbol</th>
+          <th>Price</th>
+          <th>24h Change</th>
+          <th>24h Volume</th>
+          <th>24h High</th>
+          <th>24h Low</th>
+          <th>Signal</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (coin of coins(); track coin.symbol; let i = $index) {
+        <tr [class]="getChangeClass(coin.change24h)">
+          <td class="rank">{{ i + 1 }}</td>
+          <td class="symbol">
+            <strong>{{ coin.symbol }}</strong>
+          </td>
+          <td class="price">{{ formatMoney(coin.price) }}</td>
+          <td class="change" [class]="getChangeClass(coin.change24h)">
+            <span class="change-badge">{{ formatPercent(coin.change24h) }}</span>
+          </td>
+          <td class="volume">{{ formatVolume(coin.volume24h) }}</td>
+          <td class="high">{{ formatMoney(coin.high24h) }}</td>
+          <td class="low">{{ formatMoney(coin.low24h) }}</td>
+          <td class="signal">
+            <span class="signal-badge">
+              {{ getSignalStrength(coin.change24h, coin.volume24h) }}
+            </span>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  }
+</div>

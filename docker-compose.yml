@@ -17,6 +17,9 @@ services:
       RISK_PERCENTAGE: ${RISK_PERCENTAGE:-2}
       MAX_POSITIONS: ${MAX_POSITIONS:-5}
       CAPITAL_PROTECTION: ${CAPITAL_PROTECTION:-true}
+      API_PORT: 3000
+    ports:
+      - "3000:3000"
     volumes:
       - ./app-backend/logs:/app/logs
       - ./app-backend/trades.db:/app/trades.db

@@ -172,15 +172,22 @@ ${
             change < this.config.filters.maxChange24h
           );
         })
-        .sort((a, b) => (b[1].quoteVolume || 0) - (a[1].quoteVolume || 0))
+        .sort((a, b) => {
+          // ✅ ترتيب حسب قوة التغيير (الأقوى أولاً)
+          const changeA = Math.abs(a[1].percentage || 0);
+          const changeB = Math.abs(b[1].percentage || 0);
+          return changeB - changeA;
+        })
         .slice(0, limit)
         .map(([symbol]) => symbol);
 
       this.logger.info(
-        `✅ Filtered ${sortedByVolume.length} coins from ${
+        `✅ Filtered ${
+          sortedByVolume.length
+        } coins (sorted by strongest change) from ${
           Object.keys(tickers).length
         } total`
-      ); // ✅ لوج للتتبع
+      );
       return sortedByVolume;
     } catch (err) {
       this.logger.error(`Get top volume error: ${err.message}`);

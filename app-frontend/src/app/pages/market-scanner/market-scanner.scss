@@ -1,0 +1,294 @@
+.market-scanner {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.scanner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  .header-left {
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+      color: #1a1a1a;
+    }
+
+    .subtitle {
+      margin: 0.5rem 0 0;
+      color: #666;
+      font-size: 0.9rem;
+    }
+  }
+
+  .header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+
+    .refresh-controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .btn-refresh {
+      padding: 0.5rem 1rem;
+      background: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s;
+
+      &:hover:not(:disabled) {
+        background: #45a049;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .spinning {
+        display: inline-block;
+        animation: spin 1s linear infinite;
+      }
+    }
+
+    .auto-refresh {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .last-update {
+      font-size: 0.85rem;
+      color: #888;
+    }
+  }
+}
+
+.stats-bar {
+  display: flex;
+  gap: 2rem;
+  padding: 1rem;
+  background: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+
+  .stat {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+
+    .stat-label {
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .stat-value {
+      font-weight: bold;
+      font-size: 1.1rem;
+
+      &.positive {
+        color: #4caf50;
+      }
+
+      &.negative {
+        color: #f44336;
+      }
+    }
+  }
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 3rem;
+
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #4caf50;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  p {
+    color: #666;
+    font-size: 1.1rem;
+  }
+
+  button {
+    margin-top: 1rem;
+    padding: 0.5rem 1.5rem;
+    background: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+
+    &:hover {
+      background: #45a049;
+    }
+  }
+}
+
+.table-container {
+  overflow-x: auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.coins-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  thead {
+    background: #f5f5f5;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+
+    th {
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: #333;
+      border-bottom: 2px solid #ddd;
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid #eee;
+      transition: background 0.2s;
+
+      &:hover {
+        background: #f9f9f9;
+      }
+
+      &.very-positive {
+        background: rgba(76, 175, 80, 0.05);
+      }
+
+      &.very-negative {
+        background: rgba(244, 67, 54, 0.05);
+      }
+    }
+
+    td {
+      padding: 1rem;
+
+      &.rank {
+        font-weight: bold;
+        color: #999;
+      }
+
+      &.symbol strong {
+        color: #1976d2;
+      }
+
+      &.price {
+        font-family: 'Courier New', monospace;
+      }
+
+      &.change {
+        .change-badge {
+          display: inline-block;
+          padding: 0.25rem 0.75rem;
+          border-radius: 4px;
+          font-weight: bold;
+          font-size: 0.9rem;
+        }
+
+        &.very-positive .change-badge {
+          background: #4caf50;
+          color: white;
+        }
+
+        &.positive .change-badge {
+          background: #c8e6c9;
+          color: #2e7d32;
+        }
+
+        &.very-negative .change-badge {
+          background: #f44336;
+          color: white;
+        }
+
+        &.negative .change-badge {
+          background: #ffcdd2;
+          color: #c62828;
+        }
+      }
+
+      &.volume {
+        font-weight: 600;
+        color: #666;
+      }
+
+      &.signal {
+        .signal-badge {
+          display: inline-block;
+          padding: 0.25rem 0.75rem;
+          border-radius: 4px;
+          font-size: 0.85rem;
+          font-weight: bold;
+          background: #e3f2fd;
+          color: #1976d2;
+        }
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .scanner-header {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .header-right {
+      width: 100%;
+      align-items: flex-start;
+    }
+  }
+
+  .stats-bar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .table-container {
+    font-size: 0.85rem;
+  }
+
+  .coins-table {
+    thead th,
+    tbody td {
+      padding: 0.5rem;
+    }
+  }
+}
