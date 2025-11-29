@@ -10,6 +10,20 @@ interface CoinData {
   volume24h: number;
   high24h: number;
   low24h: number;
+  analysis?: {
+    rsi: boolean | null;
+    macd: boolean | null;
+    trend: boolean | null;
+    volumeSurge: boolean | null;
+    score: number;
+    total: number;
+    details?: {
+      rsiValue: number;
+      price: number;
+      sma50: number;
+      sma200: number;
+    };
+  };
 }
 
 @Component({
@@ -135,5 +149,17 @@ export class MarketScanner implements OnInit, OnDestroy {
   formatTime(date: Date | null): string {
     if (!date) return 'Never';
     return date.toLocaleTimeString();
+  }
+
+  getAnalysisIcon(value: boolean | null): string {
+    if (value === null) return '⏳';
+    return value ? '✅' : '❌';
+  }
+
+  getAnalysisClass(score: number, total: number): string {
+    const percentage = (score / total) * 100;
+    if (percentage >= 75) return 'strong';
+    if (percentage >= 50) return 'medium';
+    return 'weak';
   }
 }

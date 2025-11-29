@@ -52,17 +52,48 @@ class ApiServer {
           ? this.bot.ws.getTickersCache()
           : await this.bot.exchange.fetchTickers();
 
-        const coinsData = coins.map((symbol) => {
-          const ticker = tickers[symbol] || {};
-          return {
-            symbol,
-            price: ticker.last || 0,
-            change24h: ticker.percentage || 0,
-            volume24h: ticker.quoteVolume || 0,
-            high24h: ticker.high || 0,
-            low24h: ticker.low || 0,
-          };
-        });
+        // Get technical analysis for each coin
+        const coinsData = await Promise.all(
+          coins.map(async (symbol) => {
+            const ticker = tickers[symbol] || {};
+
+            // Get technical analysis
+            let analysis = null;
+            try {
+              const ohlcv = await this.bot.exchange.fetchOHLCV(
+                symbol,
+                this.config.trading.ohlcvTimeframe,
+                undefined,
+                100
+              );
+
+              if (ohlcv && ohlcv.length >= 50) {
+                analysis = await this.bot.analyzeCoin(symbol, ohlcv, ticker);
+              }
+            } catch (err) {
+              this.logger.warning(
+                `Failed to analyze ${symbol}: ${err.message}`
+              );
+            }
+
+            return {
+              symbol,
+              price: ticker.last || 0,
+              change24h: ticker.percentage || 0,
+              volume24h: ticker.quoteVolume || 0,
+              high24h: ticker.high || 0,
+              low24h: ticker.low || 0,
+              analysis: analysis || {
+                rsi: null,
+                macd: null,
+                trend: null,
+                volumeSurge: null,
+                score: 0,
+                total: 4,
+              },
+            };
+          })
+        );
 
         res.json({
           success: true,

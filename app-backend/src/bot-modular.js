@@ -191,6 +191,38 @@ ${
     }
   }
 
+  // ✅ تحليل عملة واحدة (للـ API)
+  async analyzeCoin(symbol, ohlcv, ticker) {
+    try {
+      const analysis = await this.technicalAnalysis.analyzeSignal(ohlcv);
+
+      if (!analysis) return null;
+
+      return {
+        rsi: analysis.rsiInBuyZone,
+        macd: analysis.macdCrossUp && analysis.macdPositive,
+        trend: analysis.trendFollowing && analysis.aboveMa200,
+        volumeSurge: analysis.volSurge,
+        score: [
+          analysis.rsiInBuyZone,
+          analysis.macdCrossUp && analysis.macdPositive,
+          analysis.trendFollowing && analysis.aboveMa200,
+          analysis.volSurge,
+        ].filter(Boolean).length,
+        total: 4,
+        details: {
+          rsiValue: analysis.currentRsi,
+          price: analysis.price,
+          sma50: analysis.sma50,
+          sma200: analysis.sma200,
+        },
+      };
+    } catch (err) {
+      this.logger.error(`Analysis error for ${symbol}: ${err.message}`);
+      return null;
+    }
+  }
+
   async scanMarket() {
     const signals = [];
     const topCoins = await this.getTopVolumeCoins(50); // ✅ زيادة من 30 إلى 50

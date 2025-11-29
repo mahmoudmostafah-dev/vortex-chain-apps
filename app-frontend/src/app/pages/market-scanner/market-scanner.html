@@ -58,6 +58,7 @@
           <th>24h Volume</th>
           <th>24h High</th>
           <th>24h Low</th>
+          <th>Technical Analysis</th>
           <th>Signal</th>
         </tr>
       </thead>
@@ -75,6 +76,35 @@
           <td class="volume">{{ formatVolume(coin.volume24h) }}</td>
           <td class="high">{{ formatMoney(coin.high24h) }}</td>
           <td class="low">{{ formatMoney(coin.low24h) }}</td>
+          <td class="analysis">
+            @if (coin.analysis) {
+            <div class="analysis-grid">
+              <span
+                class="analysis-item"
+                [title]="'RSI: ' + (coin.analysis.details?.rsiValue || 'N/A')"
+              >
+                {{ getAnalysisIcon(coin.analysis.rsi) }} RSI
+              </span>
+              <span class="analysis-item" title="MACD Crossover">
+                {{ getAnalysisIcon(coin.analysis.macd) }} MACD
+              </span>
+              <span class="analysis-item" title="Above SMA50 & SMA200">
+                {{ getAnalysisIcon(coin.analysis.trend) }} Trend
+              </span>
+              <span class="analysis-item" title="Volume Surge">
+                {{ getAnalysisIcon(coin.analysis.volumeSurge) }} Vol
+              </span>
+              <div
+                class="analysis-score"
+                [class]="getAnalysisClass(coin.analysis.score, coin.analysis.total)"
+              >
+                {{ coin.analysis.score }}/{{ coin.analysis.total }}
+              </div>
+            </div>
+            } @else {
+            <span class="loading-text">⏳ Loading...</span>
+            }
+          </td>
           <td class="signal">
             <span class="signal-badge">
               {{ getSignalStrength(coin.change24h, coin.volume24h) }}
