@@ -30,7 +30,7 @@ export class MarketScanner implements OnInit, OnDestroy {
   protected losersCount = computed(() => this.coins().filter((c) => c.change24h < 0).length);
 
   private refreshSubscription?: Subscription;
-  private readonly API_URL = 'http://localhost:3000/api';
+  private readonly API_URL = '/api';
 
   constructor(private http: HttpClient) {}
 
